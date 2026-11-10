@@ -1,7 +1,8 @@
 // ECHO offline cache. Every file the page needs is saved on the first visit; after that ECHO opens with no network.
 // When the site is updated, change VERSION so the iPad fetches the new files the next time it is online.
-const VERSION = 'echo-v13-1';
+const VERSION = 'echo-v13-2';
 const FILES = [
+ "assets/echo-portrait-v3.webp",
  "echo-labels.js",
  "echo.webmanifest",
  "fonts/Urbanist-VariableFont_wght.ttf",
