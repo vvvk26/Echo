@@ -1,0 +1,1585 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ECHO</title>
+<!-- added to the Home Screen it opens as its own full-screen app, no Safari bar -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ECHO">
+<meta name="theme-color" content="#04090b">
+<link rel="manifest" href="echo.webmanifest">
+<style>
+@font-face{font-family:Urbanist;src:url('fonts/Urbanist-VariableFont_wght.ttf');font-weight:100 900}
+@font-face{font-family:PlexMono;src:url('fonts/ibm-plex-mono-latin-400-normal.woff2')}
+@font-face{font-family:PlexMono;font-weight:500;src:url('fonts/ibm-plex-mono-latin-500-normal.woff2')}
+:root{--teal:#3fe0d6;--teal-d:#12a5a8;--ink:#eaf6ff;--mute:rgba(200,228,240,.55);--faint:rgba(63,224,214,.16);--mono:PlexMono,ui-monospace,Menlo,monospace}
+html,body{margin:0;height:100%;background:#03080a;color:var(--ink);overflow:hidden;font-family:Urbanist,system-ui,sans-serif;-webkit-user-select:none;user-select:none}
+#gl,#net{position:fixed;inset:0;width:100%;height:100%;display:block}
+#net{mix-blend-mode:screen;pointer-events:none}
+.mono{font-family:var(--mono)}
+.hud{position:fixed;inset:0;pointer-events:none;font-family:var(--mono);font-size:1.12vh;letter-spacing:.08em;color:var(--mute)}
+.hud .in{opacity:0;transform:translateY(6px);transition:opacity .25s,transform .25s}
+.hud.on .in{opacity:1;transform:none}
+.top{position:absolute;left:2.6vw;right:2.6vw;top:2.8vh;display:flex;align-items:center;gap:1.4vw}
+.logo{font-family:Urbanist;font-weight:600;font-size:2.4vh;letter-spacing:.04em;color:var(--ink)}
+.tabs{display:flex;gap:1.6vw;margin-left:1vw}
+.tabs span{padding:.3vh .6vw;border:1px solid transparent}
+.tabs span.a{color:var(--teal);border-color:var(--faint)}
+.top .r{margin-left:auto;text-align:right}
+.col{position:absolute;top:8.5vh;bottom:9vh;width:19.5vw;display:flex;flex-direction:column;gap:2.2vh}
+.col.l{left:2.6vw;width:15vw;font-size:1vh}.col.r{right:2.6vw;width:35vw;top:10vh;gap:3vh}
+.colbg{position:fixed;top:0;bottom:0;width:23vw;pointer-events:none}.colbg.l{left:0;background:linear-gradient(90deg,rgba(3,8,10,.92) 70%,rgba(3,8,10,0))}.colbg.r{right:0;width:42vw;background:linear-gradient(270deg,rgba(3,8,10,.9) 75%,rgba(3,8,10,0))}
+.blk{position:relative;padding-top:1vh;border-top:1px solid var(--faint)}
+.blk::before{content:"";position:absolute;left:0;top:-1px;width:18px;height:1px;background:var(--teal)}
+.blk h5{margin:0 0 .9vh;font-weight:500;font-size:1.05vh;letter-spacing:.22em;color:var(--teal)}
+.log{height:26vh;overflow:hidden;line-height:1.62;white-space:nowrap}
+.log div{overflow:hidden;text-overflow:ellipsis}
+.log .m{color:var(--ink)}.log .h{color:#03080a;background:var(--teal);padding:0 .3em}
+.bars div{display:grid;grid-template-columns:1fr 6.5vw 3.5ch;align-items:center;gap:.6vw;line-height:2}
+.bars i{display:block;height:3px;background:rgba(255,255,255,.07);position:relative}
+.bars i b{position:absolute;inset:0 auto 0 0;background:var(--teal-d)}
+.bars span:last-child{text-align:right;color:var(--ink)}
+canvas.w{display:block;width:100%;height:8vh}
+.target{padding:2.4vh 1.8vw 1.8vh;border:1px solid rgba(63,224,214,.4);border-top:1px solid rgba(63,224,214,.4);background:linear-gradient(180deg,rgba(63,224,214,.1),rgba(63,224,214,.02))}
+.target::before{display:none}
+.target .id{font-family:Urbanist;font-weight:600;font-size:6vh;white-space:nowrap;color:var(--ink);letter-spacing:.01em;line-height:1.1}
+.target .nm{color:var(--teal);font-size:1.8vh;letter-spacing:.18em;margin:.8vh 0 2vh}
+.target h5{font-size:1.3vh!important}
+.kv{font-size:1.6vh;letter-spacing:.04em}
+.kv div{display:flex;justify-content:space-between;gap:1vw;line-height:2.5;border-bottom:1px dashed rgba(255,255,255,.06)}
+.kv span:last-child{color:var(--ink);text-align:right}
+.ds div{display:grid;grid-template-columns:1fr 4ch;line-height:1.9}
+.ds div span:last-child{text-align:right;color:var(--ink)}
+.ds div.hit span{color:#03080a;background:var(--teal)}
+.bot{position:absolute;left:2.6vw;right:2.6vw;bottom:2.6vh;display:flex;align-items:center;gap:1.6vw}
+.phase{color:var(--teal);min-width:30ch}
+.seg{display:flex;gap:3px;flex:1}
+.seg i{flex:1;height:5px;background:rgba(255,255,255,.07)}
+.seg i.f{background:var(--teal)}
+.cnt{display:flex;gap:2vw}
+.cnt b{display:block;font-weight:500;color:var(--ink);font-size:1.5vh;letter-spacing:.04em}
+.call{position:fixed;left:0;top:0;pointer-events:none;font-family:var(--mono);font-size:1.15vh;letter-spacing:.14em;color:var(--ink);padding:.45vh .7vw;border:1px solid rgba(63,224,214,.5);background:rgba(3,12,14,.55);white-space:nowrap;opacity:0;transition:opacity .2s}
+.call.main{font-size:1.6vh;color:#03080a;background:var(--teal);border-color:var(--teal);font-weight:500}
+.call.on{opacity:1}
+.idle{position:fixed;inset:0;display:grid;place-items:center;pointer-events:none;transition:opacity .4s}
+.idle.off{opacity:0}
+.idle .ret{width:22vh;height:22vh;border-radius:50%;border:1px dashed rgba(63,224,214,.35);display:grid;place-items:center;animation:spin 24s linear infinite}
+.idle p{position:absolute;top:calc(50% + 14vh);width:100%;text-align:center;font-family:var(--mono);font-size:1.3vh;letter-spacing:.32em;color:var(--mute);animation:blink 2.4s ease-in-out infinite}
+.idle .snd{position:absolute;right:2.6vw;bottom:2.6vh;font-family:var(--mono);font-size:1.1vh;letter-spacing:.2em;color:var(--teal);transition:opacity .4s}
+.idle .snd.off{opacity:0}
+.idle .sb{position:absolute;left:2.6vw;bottom:2.6vh;font-family:var(--mono);font-size:1.1vh;letter-spacing:.2em;color:var(--mute)}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes blink{50%{opacity:.35}}
+.glitch{position:fixed;inset:0;pointer-events:none;opacity:0;background:rgba(63,224,214,.06);mix-blend-mode:screen;transition:opacity .25s}
+.glitch.on{opacity:1}
+
+.grain{position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0 1px,transparent 1px 3px)}
+.shade{position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 45%,rgba(1,4,5,.7) 100%)}
+.objname{position:fixed;left:39.5vw;bottom:10vh;transform:translateX(-50%);text-align:center;opacity:0;transition:opacity .4s;white-space:nowrap;padding:1.1vh 2.2vw;
+  background:linear-gradient(var(--teal),var(--teal)) left top/10px 1px,linear-gradient(var(--teal),var(--teal)) left top/1px 10px,
+  linear-gradient(var(--teal),var(--teal)) right top/10px 1px,linear-gradient(var(--teal),var(--teal)) right top/1px 10px,
+  linear-gradient(var(--teal),var(--teal)) left bottom/10px 1px,linear-gradient(var(--teal),var(--teal)) left bottom/1px 10px,
+  linear-gradient(var(--teal),var(--teal)) right bottom/10px 1px,linear-gradient(var(--teal),var(--teal)) right bottom/1px 10px;background-repeat:no-repeat}
+.objname.on{opacity:1}
+.objname b{display:block;font-family:Urbanist;font-weight:600;font-size:2.1vh;letter-spacing:.06em;color:var(--ink)}
+.objname span{display:block;margin-top:.6vh;font-family:var(--mono);font-size:1.25vh;letter-spacing:.16em;color:var(--teal)}
+.dev{position:fixed;left:50%;bottom:7.5vh;transform:translateX(-50%);display:flex;gap:8px;font-family:var(--mono);font-size:11px;opacity:.35;transition:opacity .2s;z-index:5}
+.dev:hover{opacity:1}
+.dev button{font:inherit;color:var(--ink);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:5px 11px;cursor:pointer}
+.sc{margin-bottom:1.2vh}
+.sc .a{display:flex;justify-content:space-between;gap:.5vw;color:var(--ink)}
+.sc .a b{font-weight:500;color:#03080a;background:var(--teal);padding:0 .35em;opacity:0}
+.sc .a b.on{opacity:1}
+.sc i{display:block;height:2px;margin:.5vh 0 .35vh;background:rgba(255,255,255,.08);position:relative}
+.sc i u{position:absolute;inset:0 auto 0 0;width:0;background:var(--teal-d)}
+.sc .s{font-size:.95vh;color:var(--mute)}
+.d{padding:.9vh .9vw;border-left:2px solid rgba(255,255,255,.08);margin-bottom:.5vh;opacity:.6;transition:all .3s}
+.d .a{display:flex;justify-content:space-between;gap:.6vw;color:var(--ink);font-size:1.5vh}
+.d .a b{font-weight:500;min-width:4ch;text-align:right}
+.d .s{font-size:1.2vh;color:var(--mute);margin-top:.25vh;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.d.hit{opacity:1;border-left-color:var(--teal);background:rgba(63,224,214,.08)}
+.d.hit .a b{color:var(--teal)}
+
+/* ---------- Act 2: ECHO thinking ---------- */
+.echo{position:fixed;inset:0;opacity:0;pointer-events:none;background:#04090b;z-index:1;transition:opacity .45s}
+body.idle .echo{opacity:1;transition:opacity 1.2s}
+body.idle .echo .etop,body.idle .echo .speech,body.idle #chips{display:none}
+body.act2 .echo{opacity:1;transition:opacity .9s ease .3s}
+body.act2.out .echo{opacity:0;transition:opacity .6s}
+body.act2 #gl,body.act2 .hud,body.act2 .objname{opacity:0!important;transition:opacity .9s}
+#ebg{position:absolute;inset:0;width:100%;height:100%;display:block}
+#eface{position:absolute;top:0;left:50%;height:100%;transform:translateX(-50%);transition:transform 1.4s cubic-bezier(.6,0,.25,1);display:block;-webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent)}
+.echo .eshade{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,transparent 40%,rgba(3,7,9,.75) 92%),linear-gradient(transparent 62%,rgba(3,7,9,.8))}
+.echo .etop{position:absolute;left:2.6vw;right:2.6vw;top:2.8vh;display:flex;align-items:baseline;gap:1.4vw;font-family:var(--mono);font-size:1.25vh;letter-spacing:.14em;color:var(--mute)}
+.echo .etop .logo{font-size:2.4vh}
+.echo .etop .r{margin-left:auto}
+.echo .etop b{font-weight:500;color:var(--ink)}
+.chip{position:absolute;width:19vw;padding:1.3vh 1.1vw;border:1px solid rgba(63,224,214,.35);background:rgba(8,26,30,.55);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border-radius:1vh;font-family:var(--mono);
+  opacity:0;transform:translateY(1.2vh);transition:opacity .7s,transform .7s}
+.chip.in{opacity:1;transform:none}
+.chip.go{opacity:0;transition:transform 1.4s cubic-bezier(.55,0,.85,.35),opacity 1.4s cubic-bezier(.9,0,1,.5)}
+.chip .k{font-size:1vh;letter-spacing:.22em;color:var(--teal)}
+.chip .n{font-family:Urbanist;font-weight:600;font-size:1.9vh;color:var(--ink);margin:.5vh 0 .3vh;display:flex;justify-content:space-between;gap:1vw}
+.chip .n b{color:var(--teal);font-weight:600}
+.chip .w{font-size:1.15vh;color:var(--mute);letter-spacing:.04em}
+.speech{position:absolute;left:16vw;right:16vw;bottom:9vh;text-align:center}
+.say{margin:0;font-family:Urbanist;font-size:3.1vh;line-height:1.4;font-weight:500;color:var(--ink);text-shadow:0 0 2vh rgba(3,7,9,.95);min-height:8.7vh;transition:opacity .35s}
+.say.fade{opacity:0}
+.state{margin:1.4vh 0 0;font-family:var(--mono);font-size:1.25vh;letter-spacing:.24em;color:var(--teal)}
+.state i{font-style:normal;animation:blink 1.4s ease-in-out infinite}
+
+/* ---------- idle: ECHO waits ---------- */
+.idle{z-index:2}
+.idle .itop{position:absolute;left:2.6vw;right:2.6vw;top:2.8vh;display:flex;align-items:baseline;gap:1.4vw;font-family:var(--mono);font-size:1.25vh;letter-spacing:.14em;color:var(--mute)}
+.idle .itop .logo{font-size:2.4vh}
+.idle .itop .r{margin-left:auto}
+.idle .icap{position:absolute;left:16vw;right:16vw;bottom:17vh;margin:0;text-align:center;font-family:Urbanist;font-size:3.1vh;line-height:1.4;font-weight:500;color:var(--ink);text-shadow:0 0 2vh rgba(3,7,9,.95);transition:opacity .5s}
+.idle .icap.fade{opacity:0}
+.idle .invite{position:absolute;left:0;right:0;bottom:6.5vh;display:flex;align-items:center;justify-content:center;gap:1.1vw;font-family:var(--mono);font-size:1.5vh;letter-spacing:.32em;color:var(--teal)}
+.idle .invite i{width:3.2vh;height:3.2vh;border-radius:50%;border:1px dashed rgba(63,224,214,.6);animation:spin 18s linear infinite;position:relative}
+.idle .invite i::after{content:"";position:absolute;inset:35%;border-radius:50%;background:var(--teal);animation:blink 2.4s ease-in-out infinite}
+.idle .invite span{animation:blink 3.2s ease-in-out infinite}
+
+/* ---------- Act 3: the notification ---------- */
+body.act3 #eface{transform:translateX(-95%)}
+body.act3 .say{opacity:0}
+body.act3 .speech{left:4vw;right:auto;width:40vw;text-align:left}
+.notes{position:absolute;right:3vw;top:9.5vh;bottom:5vh;width:44vw;display:flex;flex-direction:column;gap:1.6vh;pointer-events:none}
+.note{position:relative;padding:2.2vh 1.8vw 2vh;border-radius:1.6vh;background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.16);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2vh 5vh rgba(0,0,0,.4);
+  opacity:0;transform:translateX(4vw);transition:opacity .8s,transform .9s cubic-bezier(.2,.8,.2,1)}
+.note.in{opacity:1;transform:none}
+.note .kick{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-weight:500;font-size:1.3vh;letter-spacing:.2em;color:var(--teal)}
+.note .kick span:last-child{color:var(--mute);letter-spacing:.12em;font-weight:400}
+.note .kick::before{content:"";width:.9vh;height:.9vh;border-radius:50%;background:var(--teal);box-shadow:0 0 1vh var(--teal);margin-right:.8vw;animation:blink 1.6s ease-in-out infinite}
+.note .kick span:first-child{margin-right:auto}
+.note .row{display:grid;grid-template-columns:24% 1fr;gap:1vw;padding:1.05vh 0;border-top:1px solid rgba(255,255,255,.08);font-size:1.85vh;line-height:1.35;color:var(--ink);
+  opacity:0;transform:translateY(.6vh);transition:opacity .5s,transform .5s}
+.note .row:first-of-type{margin-top:1.2vh}
+.note .row.in{opacity:1;transform:none}
+.note .row dt{font-family:var(--mono);font-size:1.2vh;letter-spacing:.12em;color:var(--mute);padding-top:.45vh}
+.note .row dd{margin:0}
+.note .row small{display:block;margin-top:.4vh;font-size:1.45vh;color:var(--mute);line-height:1.4}
+.conf{display:flex;align-items:center;gap:1.2vw}
+.conf b{font-family:Urbanist;font-size:3.4vh;font-weight:600;color:var(--teal);min-width:4.2ch}
+.cbar{position:relative;flex:1;height:.7vh;border-radius:9px;background:rgba(255,255,255,.1)}
+.cbar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:9px;background:linear-gradient(90deg,var(--teal-d),var(--teal));box-shadow:0 0 1.2vh rgba(63,224,214,.55);transition:width 1.2s cubic-bezier(.3,.7,.2,1)}
+.cbar::after{content:"NEVER 100%";position:absolute;right:0;top:-2.2vh;font-family:var(--mono);font-size:1vh;letter-spacing:.14em;color:var(--mute)}
+.cbar::before{content:"";position:absolute;right:0;top:-.7vh;bottom:-.7vh;border-right:1px dashed rgba(255,255,255,.35)}
+.why{display:grid;grid-template-columns:1fr auto;gap:.3vh 1vw;font-size:1.5vh;color:var(--mute)}
+.why span:nth-child(even){font-family:var(--mono);font-size:1.15vh;letter-spacing:.14em;text-align:right;padding-top:.25vh}
+.why .s{color:var(--teal)}.why .m{color:var(--ink)}
+.why em{grid-column:1/-1;font-style:normal;margin-top:.6vh;color:var(--ink);font-size:1.45vh}
+.acts{display:flex;gap:.8vw;margin-top:1.6vh;opacity:0;transition:opacity .6s}
+.acts.in{opacity:1}
+.acts span{font-family:var(--mono);font-size:1.2vh;letter-spacing:.14em;padding:.8vh 1vw;border-radius:99px;border:1px solid rgba(255,255,255,.2);color:var(--ink)}
+.acts span:first-child{border-color:rgba(63,224,214,.6);color:var(--teal)}
+.note.hist .big{font-family:Urbanist;font-size:2vh;line-height:1.45;color:var(--ink);margin:1.4vh 0 1.2vh}
+.note.hist .cnt{display:flex;align-items:baseline;gap:1vw;font-family:var(--mono);font-size:1.25vh;letter-spacing:.16em;color:var(--mute)}
+.note.hist .cnt b{font-family:Urbanist;font-size:4.2vh;font-weight:600;color:var(--teal);letter-spacing:0}
+
+/* ---------- ask ECHO: joystick question picker, on the same screen as the notification ----------
+   When the questions open, ECHO's face fades away so the questions can use the whole width: the notification folds
+   to its key lines in a row along the top, and each answer opens right under the question that was asked. */
+body.ask .speech{opacity:0;transition:opacity .4s}
+body.ask #eface{opacity:0;transition:opacity .9s,transform 1.4s cubic-bezier(.6,0,.25,1)}
+.askp{position:absolute;left:4vw;right:4vw;top:27vh;bottom:4vh;padding:2.4vh 2.2vw 2vh;border-radius:1.8vh;background:rgba(4,14,17,.62);border:1px solid rgba(63,224,214,.28);
+  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);overflow:hidden;opacity:0;transform:translateY(2vh);transition:opacity .8s,transform .8s cubic-bezier(.2,.8,.2,1)}
+body.ask .askp{opacity:1;transform:none}
+body.ask .notes{left:4vw;right:4vw;width:auto;top:9vh;bottom:auto;flex-direction:row;gap:1.6vw}
+body.ask .note{flex:1;padding:1.5vh 1.6vw 1.3vh}
+body.ask .note .row:not(.keep),body.ask .note small,body.ask .note .acts,body.ask .note.hist .big{display:none}
+body.ask .note .row{padding:.7vh 0}
+body.ask .note .row:first-of-type{margin-top:.8vh}
+body.ask .conf b{font-size:2.6vh}
+.note.hist .short{display:none;font-size:1.8vh;color:var(--ink);margin:.9vh 0 .4vh}
+body.ask .note.hist .short{display:block}
+body.ask .note.hist .cnt b{font-size:3vh}
+.askp .kick{display:flex;justify-content:space-between;font-family:var(--mono);font-size:1.5vh;letter-spacing:.2em;color:var(--teal)}
+.askp .kick{align-items:center}
+/* the joystick hint glows, so visitors reach for the stick, not the screen */
+.askp .joy{display:flex;align-items:center;gap:1.2vw;padding:.8vh 1.6vw .8vh 1vw;border-radius:99px;border:1px solid rgba(63,224,214,.6);background:rgba(63,224,214,.1);
+  color:var(--ink);letter-spacing:.14em;font-size:1.45vh;animation:joyglow 2.2s ease-in-out infinite}
+.askp .joy .jl{font-weight:500;color:var(--teal);letter-spacing:.18em;font-size:1.35vh}
+/* the two actions sit in their own cells, split by a thin line, so they read as two separate steps */
+.askp .joy .jstep{display:flex;align-items:center;gap:.7vw;padding-left:1.2vw;border-left:1px solid rgba(63,224,214,.35);
+  font-family:Urbanist;font-size:1.9vh;letter-spacing:.01em;color:var(--ink)}
+.askp .joy .ud{font-weight:400;font-size:1vh;line-height:1.05;text-align:center;margin:0;color:var(--teal);letter-spacing:0}
+.askp .joy .pr{width:1.3vh;height:1.3vh;border-radius:50%;background:var(--teal);box-shadow:0 0 0 .35vh rgba(63,224,214,.25)}
+.askp .joy svg{width:3.4vh;height:3.4vh;overflow:visible}
+.askp .joy .jb{fill:none;stroke:var(--teal);stroke-width:2;opacity:.55}
+.askp .joy .js{fill:var(--teal);animation:joytilt 2.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes joyglow{0%,100%{box-shadow:0 0 0 0 rgba(63,224,214,0),0 0 1.2vh rgba(63,224,214,.25)}50%{box-shadow:0 0 0 .5vh rgba(63,224,214,.12),0 0 3.2vh rgba(63,224,214,.6)}}
+/* seen from above: the knob goes up, down, then presses */
+@keyframes joytilt{0%,100%{transform:none}18%{transform:translateY(-7px)}36%{transform:none}54%{transform:translateY(7px)}72%{transform:none}82%{transform:scale(.7)}90%{transform:none}}
+.askp{display:flex;flex-direction:column}
+.askp ol{list-style:none;margin:1.8vh 0 0;padding:0 0 3vh;display:flex;flex-direction:column;gap:.5vh;flex:1;min-height:0;overflow-y:auto;scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(#000 88%,transparent);mask-image:linear-gradient(#000 88%,transparent)}
+.askp ol::-webkit-scrollbar{display:none}
+.askp li{flex:none}
+.askp li{border-radius:1.2vh;border:1px solid transparent;transition:background .08s,border-color .08s}
+.askp .q{display:flex;align-items:center;gap:1.4vw;padding:1.25vh 1.4vw;font-size:2.6vh;color:var(--mute);transition:color .08s}
+.askp .q b{font-family:var(--mono);font-weight:400;font-size:1.5vh;letter-spacing:.1em;color:var(--mute);min-width:2.4ch}
+.askp li.sel{background:rgba(63,224,214,.12);border-color:rgba(63,224,214,.55)}
+.askp li.sel .q{color:var(--ink)}
+.askp li.sel .q b{color:var(--teal)}
+.askp li.sel .q::after{content:"PRESS";margin-left:auto;font-family:var(--mono);font-size:1.3vh;letter-spacing:.2em;color:var(--teal);animation:blink 1.6s ease-in-out infinite}
+.askp li.done:not(.sel) .q{color:rgba(200,228,240,.45)}
+.askp li.done:not(.sel) .q::after{content:"ASKED";margin-left:auto;font-family:var(--mono);font-size:1.3vh;letter-spacing:.2em;color:rgba(200,228,240,.35)}
+.askp li.open .q::after{content:none}
+/* the answer drops open under its question */
+.askp .ans{margin:0 1.4vw 0 calc(2.8vw + 2.4ch);padding:0 0 0 1.4vw;border-left:2px solid var(--teal);font-family:Urbanist;font-size:2.5vh;line-height:1.45;color:var(--ink);
+  max-height:0;opacity:0;overflow:hidden;transition:max-height .45s cubic-bezier(.2,.8,.2,1),opacity .35s,margin .45s}
+.askp li.open .ans{max-height:28vh;opacity:1;margin-bottom:1.8vh}
+.askp .ans .who{display:flex;align-items:center;gap:1vw;margin:.2vh 0 .9vh;font-family:var(--mono);font-size:1.25vh;letter-spacing:.2em;color:var(--teal)}
+.askp .ans .wave{display:flex;align-items:center;gap:3px;height:2.4vh;width:6.5vh}
+.askp .ans .wave i{flex:1;height:14%;border-radius:2px;background:var(--teal);box-shadow:0 0 .8vh rgba(63,224,214,.5)}
+.askp .ans .dots::after{content:"";animation:dots 1.2s steps(4) infinite}
+@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+.askp .ans .txt{margin:0}
+.askp .ans .w{opacity:0;transition:opacity .3s}
+.askp .ans .w.on{opacity:1}
+.askp .ans em{font-style:normal;color:var(--teal)}
+.askp .ud{font-weight:400;color:var(--teal);letter-spacing:.1em;margin:0 .3vw}
+</style>
+<script>
+// Offline: the first visit saves every file on the iPad (sw.js), so ECHO then runs with no Wi-Fi or laptop.
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+</script>
+</head>
+<body class="idle">
+<canvas id="gl"></canvas>
+<canvas id="net"></canvas>
+
+<div class="idle" id="idle">
+  <div class="itop"><span class="logo">ECHO</span><span>13 NOVEMBER 2036</span><span class="r">NOTHING YOU PLACE IS STORED</span></div>
+  <div class="icap fade" id="icap"></div>
+  <div class="invite"><i></i><span>PLACE A SPECIMEN TO TRACE</span></div>
+  <div class="snd" id="snd">TAP ONCE TO TURN SOUND ON</div>
+</div>
+
+<div class="hud" id="hud">
+  <div class="colbg l in"></div><div class="colbg r in"></div>
+  <div class="top in"><span class="logo">ECHO</span><span>TRACE ENGINE 4.2</span>
+    <div class="r">SESSION · NOT STORED<br><span id="clock">2036-11-13 14:02:11</span></div></div>
+  <div class="col l">
+    <div class="blk in"><h5>WHERE ECHO LOOKS</h5><div id="bars"></div></div>
+    <div class="blk in"><h5>QUERY STREAM</h5><div class="log" id="log"></div></div>
+  </div>
+  <div class="col r">
+    <div class="blk in target"><h5>TARGET OBJECT</h5><div class="id" id="tid">—</div><div class="nm" id="tnm">—</div><div class="kv" id="kv"></div></div>
+    <div class="blk in"><h5>CANDIDATE DATASETS</h5><div id="ds"></div></div>
+  </div>
+  <div class="bot in"><span class="phase" id="phase">READING OBJECT</span><div class="seg" id="seg"></div>
+    <div class="cnt"><span>SOURCES<b id="c1">0</b></span><span>RECORDS<b id="c2">0</b></span><span>PROBABLE USES<b id="c3">0</b></span></div></div>
+</div>
+<div id="calls"></div>
+<div class="glitch" id="glitch"></div>
+<div class="shade"></div><div class="grain"></div>
+<div class="objname" id="oname"><b id="oname-t"></b><span id="ostat"></span></div>
+
+<div class="echo" id="echo">
+  <canvas id="ebg"></canvas>
+  <canvas id="eface"></canvas>
+  <div class="eshade"></div>
+  <div class="etop"><span class="logo">ECHO</span><span id="eobj"></span><span class="r">PROFILE · <b id="eprof"></b></span></div>
+  <div id="chips"></div>
+  <div class="notes" id="notes"></div>
+  <div class="askp" id="ask"><div class="kick"><span>ASK ECHO</span>
+      <span class="joy"><svg viewBox="0 0 40 40" aria-hidden="true"><circle class="jb" cx="20" cy="20" r="17"/><circle class="js" cx="20" cy="20" r="7"/></svg>
+        <span class="jl">USE THE JOYSTICK</span>
+        <span class="jstep"><b class="ud">▲<br>▼</b><span>Tilt to choose</span></span>
+        <span class="jstep"><b class="pr"></b><span>Press to ask</span></span></span></div>
+    <ol id="qs"></ol></div>
+  <div class="speech"><p class="say" id="say"></p><p class="state" id="estate"><i>●</i> THINKING</p></div>
+</div>
+
+<script src="echo-labels.js"></script>   <!-- label artwork, shared with print/labels -->
+<script type="importmap">{"imports":{"three":"./lib/three/build/three.module.js","three/addons/":"./lib/three/examples/jsm/"}}</script>
+<script type="module">
+import * as THREE from 'three';
+import { STLLoader } from 'three/addons/loaders/STLLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ---------------- timeline (seconds after the object is placed) ----------------
+const T = { buildStart: 0.25, buildEnd: 2.75, lock: 2.9, matches: [3.6, 4.4, 5.2], complete: 5.9,   // tracing after the lock: 3 s
+            handoff: 6.6,    // scan view clears away
+            voice: 7.5 };   // ECHO starts speaking (portrait is in by then)
+// ECHO's thinking lines. To keep this part short, ECHO skips line 2 of each merged recording: it says line 1
+// (what it scanned), then jumps to lines 3–4 (what the data was used for, and how sure it is).
+// `parts` are the stretches of the file that play, back to back ([from, to] in s; null = to the end); each line's
+// time is counted on that shortened timeline. Cuts sit in the measured pauses between sentences (3 Nov). The full recordings and their line times are in sounds/voice/lines.json.
+const VOICE = {
+  '1': { file: 'maya', parts: [[0, 6.27], [19.28, null]], lines: [
+    [0, "I've scanned Maya's prescription. Veralin, 20 mg, issued in 2031."],
+    [6.37, "The insurer used it to price her life. Genetic results are protected. A diagnosis is not."],
+    [13.71, "<em>64%.</em> I can't tell you which insurer it was. But that insurer knows exactly who Maya is."]] },
+  '2': { file: 'daniel', parts: [[0, 9.47], [18.26, null]], lines: [
+    [0, "I've scanned Daniel's glucose sensor. 14 days. A reading every minute. 20,160 in total."],
+    [9.69, "The screening provider used them to score his suitability for work. He never agreed to that. Not in any consent I can find."],
+    [18.19, "<em>58%.</em> It may be an error. I have no way to check, and neither does he."]] },
+  '3': { file: 'emily', parts: [[0, 9.44], [20.36, null]], lines: [
+    [0, "I've scanned Emily's saliva kit. Returned on 14 March 2026. 2 ml. Her DNA."],
+    [9.54, "Meridian Health Analytics is using it now, for service planning. Her consent is still active. It has no expiry."],
+    [17.22, "<em>71%.</em> And that's only the latest. I've traced 1,409 uses since."]] },
+};
+
+// ---------------- the three objects ----------------
+// Callout points are in the model's own millimetres (Z up, front face is -Y).
+const OBJECTS = {
+  '1': { file: 'maya_jar.stl', id: 'RX 914472', name: 'PRESCRIPTION CONTAINER', title: 'Prescription container',
+    status: ['Reading the label and prescription record', 'Following this prescription across data sources'], build: buildJar,
+    kv: [['ISSUED', 'CityCare · 2031'], ['ITEM', 'Veralin 20 mg × 28'], ['PROFILE', 'Maya Reyes']],
+    datasets: [
+      { n: 'Actuarial model 2036-Q1', who: 'Life insurer · name withheld', why: 'diagnosis recorded 2029', pct: 64, cls: 0, hit: true },
+      { n: 'Diagnosis cluster release v7', who: 'Regional health analytics', why: 'diagnosis code + region', pct: 41, cls: 1, hit: true },
+      { n: 'Repeat-prescription panel', who: 'Pharmacy chain aggregate', why: 'refill timing', pct: 33, cls: 3, hit: true },
+      { n: 'Catalogue 114 · health segment', who: 'Data broker', why: 'no link found', pct: 4, cls: 4 },
+      { n: 'Blood-pressure outcomes study', who: 'University research group', why: 'no link found', pct: 2, cls: 2 }],
+    calls: [{ p: [0, -27.6, 26], t: 'RX 914472', main: true, side: -1 }, { p: [27.6, 0, 52], t: 'CHILD-SAFE CAP', side: 1 },
+            { p: [27.6, 0, 16], t: 'PHARMACY LABEL · 2031', side: 1 }] },
+  '2': { file: 'daniel_sensor.stl', id: 'SN 8F2-117', name: 'CONTINUOUS GLUCOSE SENSOR', title: 'Continuous glucose sensor',
+    status: ['Reading the sensor serial', 'Following 14 days of readings across data sources'], build: buildSensor,
+    kv: [['WEAR', '14 day · expired'], ['STREAM', '20,160 readings'], ['PROFILE', 'Daniel Okafor']],
+    datasets: [
+      { n: 'Suitability model v3', who: 'Employment screening provider', why: 'no consent held for this', pct: 58, cls: 4, hit: true },
+      { n: 'Wearable aggregate 2036-Q1', who: 'Device maker partner', why: 'sensor serial SN 8F2-117', pct: 37, cls: 3, hit: true },
+      { n: 'Glucose variability study', who: 'Research consortium', why: 'reading pattern', pct: 22, cls: 2, hit: true },
+      { n: 'Wellness pricing feed', who: 'Health insurer', why: 'no link found', pct: 5, cls: 0 },
+      { n: 'Catalogue 207 · fitness', who: 'Data broker', why: 'no link found', pct: 3, cls: 4 }],
+    calls: [{ p: [0, -8, 11.6], t: 'SN 8F2-117', main: true, side: -1, dy: -45 }, { p: [25.2, 0, 6.2], t: '14-DAY FILAMENT', side: 1 },
+            { p: [-29, 0, 0.4], t: 'ADHESIVE PATCH', side: -1, dy: 40 }] },
+  '3': { file: 'asha_kit.stl', id: 'KIT 2026-55913', name: 'SALIVA COLLECTION KIT', title: 'Saliva collection kit',
+    status: ['Reading the sample kit', 'Looking for data from this sample across sources'], build: buildKit,
+    kv: [['RETURNED', '14 Mar 2026'], ['SAMPLE', 'Saliva · 2 mL · DNA'], ['CONSENT', 'Broad · no expiry'], ['PROFILE', 'Emily Harper']],
+    datasets: [
+      { n: 'Service planning model', who: 'Meridian Health Analytics', why: 'your consent of 14 Mar 2026', pct: 71, cls: 0, hit: true },
+      { n: 'External research database', who: 'Academic collaborator', why: 'your consent of 14 Mar 2026', pct: 52, cls: 1, hit: true },
+      { n: 'Biobank mirror 4', who: 'Research archive', why: 'kit ID KIT 2026-55913', pct: 40, cls: 2, hit: true },
+      { n: 'Ancestry panel 2034', who: 'Consumer genomics firm', why: 'no link found', pct: 6, cls: 4 },
+      { n: 'Population release Q1', who: 'Statistics office', why: 'aggregate only', pct: 0, cls: 3 }],
+    calls: [{ p: [-6.8, 0, 64], t: 'KIT 2026-55913', main: true, side: -1 }, { p: [6.6, 0, 38], t: 'SALIVA · 2 mL', side: 1 },
+            { p: [20, 0, 5], t: 'FUNNEL BASE', side: 1 }] },
+};
+
+// ---------------- renderer ----------------
+const DPR = Math.min(devicePixelRatio, 2);
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('gl'), antialias: true });
+renderer.setPixelRatio(DPR);
+renderer.setClearColor(0x03080a, 1);
+renderer.localClippingEnabled = true;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.68;
+const scene = new THREE.Scene();
+scene.environment = new THREE.PMREMGenerator(renderer).fromScene(new RoomEnvironment(), 0.04).texture;
+const key = new THREE.DirectionalLight(0xffffff, 1.4); key.position.set(3, 5, 4); scene.add(key);
+const rim = new THREE.DirectionalLight(0x3fe0d6, 2.2); rim.position.set(-4, 2, -4); scene.add(rim);
+const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 100);
+const rig = new THREE.Group(); scene.add(rig);
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.28, 0.35, 0.95);
+composer.addPass(bloom);
+composer.addPass(new OutputPass());
+
+const net = document.getElementById('net'), nctx = net.getContext('2d');
+let W = 1, Hs = 1;
+function resize() {
+  W = innerWidth; Hs = innerHeight;
+  renderer.setSize(W, Hs, false); composer.setSize(W, Hs); bloom.setSize(W, Hs);
+  camera.aspect = W / Hs; camera.setViewOffset(W, Hs, W * 0.105, 0, W, Hs); camera.updateProjectionMatrix();
+  net.width = W * DPR; net.height = Hs * DPR; nctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  
+}
+addEventListener('resize', resize); resize();
+
+// ---------------- model loading and slicing ----------------
+const loader = new STLLoader(), cache = {};
+async function loadObject(file) {
+  if (cache[file]) return cache[file];
+  const g = await loader.loadAsync('models/' + file);
+  g.rotateX(-Math.PI / 2);                         // model Z-up -> scene Y-up
+  g.computeBoundingBox();
+  const b = g.boundingBox, size = new THREE.Vector3(); b.getSize(size);
+  const s = 2.0 / Math.max(size.x, size.y, size.z);
+  const t = new THREE.Vector3(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
+  g.translate(t.x, t.y, t.z); g.scale(s, s, s);
+  g.computeBoundingBox(); g.computeVertexNormals();
+  const H = g.boundingBox.max.y;
+  const lines = sliceGeometry(g, Math.max(44, Math.round(H / 0.026)));
+  return (cache[file] = { g, s, t, H, lines, pts: samplePoints(lines.geo, 9000) });
+}
+
+function sliceGeometry(g, count) {
+  const p = g.attributes.position.array, H = g.boundingBox.max.y, dy = H / count;
+  const pos = [], lvl = [], radius = new Float32Array(count);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3();
+  const cut = (u, v, h, out) => {
+    if ((u.y - h) * (v.y - h) >= 0) return;
+    const k = (h - u.y) / (v.y - u.y);
+    out.push(u.x + (v.x - u.x) * k, h, u.z + (v.z - u.z) * k);
+  };
+  for (let i = 0; i < p.length; i += 9) {
+    a.set(p[i], p[i + 1], p[i + 2]); b.set(p[i + 3], p[i + 4], p[i + 5]); c.set(p[i + 6], p[i + 7], p[i + 8]);
+    const lo = Math.min(a.y, b.y, c.y), hi = Math.max(a.y, b.y, c.y);
+    for (let k = Math.ceil(lo / dy - 0.5); k + 0.5 <= hi / dy; k++) {
+      const h = (k + 0.5) * dy, seg = [];
+      cut(a, b, h, seg); cut(b, c, h, seg); cut(c, a, h, seg);
+      if (seg.length === 6) {
+        pos.push(...seg); lvl.push(h / H, h / H);
+        radius[k] = Math.max(radius[k], Math.hypot(seg[0], seg[2]), Math.hypot(seg[3], seg[5]));
+      }
+    }
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('lvl', new THREE.Float32BufferAttribute(lvl, 1));
+  return { geo, radius };
+}
+
+function samplePoints(lines, n) {
+  const p = lines.attributes.position.array, l = lines.attributes.lvl.array, segs = p.length / 6;
+  const target = new Float32Array(n * 3), start = new Float32Array(n * 3), lv = new Float32Array(n), seed = new Float32Array(n);
+  for (let i = 0; i < n; i++) {
+    const s = Math.floor(Math.random() * segs), t = Math.random();
+    for (let k = 0; k < 3; k++) target[i * 3 + k] = p[s * 6 + k] + (p[s * 6 + 3 + k] - p[s * 6 + k]) * t;
+    lv[i] = l[s * 2];
+    const r = 1.2 + Math.random() * 2.2, th = Math.random() * Math.PI * 2;
+    start[i * 3] = Math.cos(th) * r; start[i * 3 + 1] = 2.2 + (Math.random() - 0.4) * 1.6; start[i * 3 + 2] = Math.sin(th) * r * 0.7;
+    seed[i] = Math.random();
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(target, 3));
+  g.setAttribute('start', new THREE.BufferAttribute(start, 3));
+  g.setAttribute('lvl', new THREE.BufferAttribute(lv, 1));
+  g.setAttribute('seed', new THREE.BufferAttribute(seed, 1));
+  return g;
+}
+
+// ---------------- scan shaders ----------------
+// front: normalised height of the scan edge. Everything above it is built.
+const U = { front: { value: 1.1 }, time: { value: 0 }, fade: { value: 1 }, done: { value: 0 }, ringR: { value: 1 }, ringY: { value: 0 }, ringA: { value: 0 } };
+
+const lineMat = new THREE.ShaderMaterial({
+  uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  vertexShader: `attribute float lvl; varying float vL; void main(){ vL=lvl; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
+  fragmentShader: `uniform float front,fade,done,time; varying float vL;
+    void main(){
+      float shown = smoothstep(front-0.002, front+0.015, vL);
+      float edge = exp(-abs(vL-front)*45.);
+      float wave = 0.75+0.25*sin(vL*140.-time*4.);
+      vec3 cool = vec3(0.25,0.95,0.9)*wave;
+      vec3 hot = vec3(1.,0.98,0.9);
+      vec3 col = mix(hot, cool, smoothstep(0.,0.25,vL-front)) + hot*edge*1.5;
+      float a = shown*mix(0.4, 0.05, done) + edge*0.7*(1.-done);
+      gl_FragColor = vec4(col, a*fade);
+    }`,
+});
+
+const ptsMat = new THREE.ShaderMaterial({
+  uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  vertexShader: `uniform float front,time,fade; attribute vec3 start; attribute float lvl,seed; varying float vA;
+    void main(){
+      float k = clamp((lvl-front)/0.12 - seed*0.5, 0., 1.);
+      k = k*k*(3.-2.*k);
+      vec3 swirl = vec3(sin(time*1.3+seed*40.), cos(time*.9+seed*20.)*.5, cos(time*1.1+seed*30.))*0.18*(1.-k);
+      vec3 p = mix(start+swirl, position, k);
+      vec4 mv = modelViewMatrix*vec4(p,1.);
+      gl_Position = projectionMatrix*mv;
+      gl_PointSize = (0.8+1.6*(1.-k)) * (7./-mv.z) * ${DPR.toFixed(1)};
+      vA = (0.4*(1.-k)) * fade;
+    }`,
+  fragmentShader: `varying float vA; void main(){ float d=length(gl_PointCoord-.5); if(d>.5) discard;
+    gl_FragColor=vec4(vec3(0.6,1.,0.95), vA*(1.-d*2.)); }`,
+});
+
+// Swirling collar of particles riding the growing edge, like the reference.
+function makeCollar(n) {
+  const a = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { a[i * 3] = Math.random() * Math.PI * 2; a[i * 3 + 1] = Math.pow(Math.random(), 1.6); a[i * 3 + 2] = Math.random(); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(a, 3));
+  return new THREE.Points(g, new THREE.ShaderMaterial({
+    uniforms: U, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+    vertexShader: `uniform float time,ringR,ringY,ringA; varying float vA;
+      void main(){ float ang=position.x+time*(0.9+position.z*1.4); float r=ringR+0.06+position.y*0.38;
+        vec3 p=vec3(cos(ang)*r, ringY+(position.z-0.5)*0.09*(1.+position.y*2.), sin(ang)*r);
+        vec4 mv=modelViewMatrix*vec4(p,1.); gl_Position=projectionMatrix*mv;
+        gl_PointSize=(0.8+position.z*1.5)*(7./-mv.z)*${DPR.toFixed(1)}; vA=ringA*(0.9-position.y*0.6); }`,
+    fragmentShader: `varying float vA; void main(){ float d=length(gl_PointCoord-.5); if(d>.5) discard; gl_FragColor=vec4(0.35,0.95,0.88,vA*(1.-d*2.)); }`,
+  }));
+}
+
+function makeFrame(box) {
+  const pts = [], mn = box.min.clone(), mx = box.max.clone(), L = 0.2;
+  mn.y = 0;
+  for (const x of [mn.x, mx.x]) for (const y of [mn.y, mx.y]) for (const z of [mn.z, mx.z]) {
+    const sx = x === mn.x ? 1 : -1, sy = y === mn.y ? 1 : -1, sz = z === mn.z ? 1 : -1;
+    pts.push(x, y, z, x + sx * L, y, z, x, y, z, x, y + sy * L, z, x, y, z, x, y, z + sz * L);
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
+  const f = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: 0x7ff3ea, transparent: true }));
+  const c = new THREE.Vector3(); box.getCenter(c); c.y = (mx.y) / 2;
+  f.userData.centre = c; f.geometry.translate(-c.x, -c.y, -c.z); f.position.copy(c);
+  return f;
+}
+
+function makeFloor() {
+  const g = new THREE.Group(), dots = [], R = 1.7;
+  for (let x = -R; x <= R + 1e-6; x += 0.1) for (let z = -R; z <= R + 1e-6; z += 0.1) if (Math.hypot(x, z) < R) dots.push(x, -0.003, z);
+  const dg = new THREE.BufferGeometry(); dg.setAttribute('position', new THREE.Float32BufferAttribute(dots, 3));
+  g.add(new THREE.Points(dg, new THREE.PointsMaterial({ color: 0x12a5a8, size: 0.011, transparent: true, opacity: 0.4 })));
+  const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+  const c = cv.getContext('2d'), gr = c.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(63,224,214,.55)'); gr.addColorStop(1, 'rgba(63,224,214,0)');
+  c.fillStyle = gr; c.fillRect(0, 0, 256, 256);
+  const glow = new THREE.Mesh(new THREE.PlaneGeometry(3, 3), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(cv), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+  glow.rotation.x = -Math.PI / 2; glow.name = 'glow'; g.add(glow);
+  return g;
+}
+
+// ---------------- real-world look ----------------
+// Every real material is clipped by the scan plane, so the true object appears as the scan passes.
+const reveal = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+let regionPlanes = [];
+function clipped(mat, extra = []) { mat.clippingPlanes = [reveal, ...extra]; mat.clipShadows = true; return mat; }
+function regionPlane(above, mm) { const p = new THREE.Plane(new THREE.Vector3(0, above ? 1 : -1, 0), 0); p.mm = mm; p.above = above; regionPlanes.push(p); return p; }
+
+function canvasTex(w, h, draw) {
+  const cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+  draw(cv.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; return t;
+}
+// a label from echo-labels.js as a texture; only the part that goes round the object is shown (not the overlap)
+function labelTex(label, pxPerMm) {
+  const t = new THREE.CanvasTexture(ECHO_LABELS.paint(label, pxPerMm)); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  if (label.loop) t.repeat.x = label.loop / label.w;
+  return t;
+}
+// The outline of the rounded-square jar, walked by arc length s (mm) from the front centre: s > 0 goes right.
+function jarLoop(a, r, off) {
+  const f = a - r, R = r + off, A = a + off, arc = Math.PI / 2 * R, at = (cx, cy, th) => [cx + R * Math.cos(th), cy + R * Math.sin(th)];
+  const segs = [[f, t => [t, -A]], [arc, t => at(f, -f, -Math.PI / 2 + t / R)], [2 * f, t => [A, -f + t]], [arc, t => at(f, f, t / R)],
+    [2 * f, t => [f - t, A]], [arc, t => at(-f, f, Math.PI / 2 + t / R)], [2 * f, t => [-A, f - t]], [arc, t => at(-f, -f, Math.PI + t / R)], [f, t => [-f + t, -A]]];
+  const P = segs.reduce((n, [l]) => n + l, 0);
+  const fn = s => { let d = ((s % P) + P) % P; for (const [l, g] of segs) { if (d <= l) return g(d); d -= l; } return segs[0][1](0); };
+  fn.length_ = P; return fn;
+}
+function barcode(c, x, y, w, h, seed) {
+  let s = seed;
+  const rnd = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  c.fillStyle = '#111';
+  for (let px = x; px < x + w;) { const bw = 1 + Math.floor(rnd() * 4); if (rnd() > 0.45) c.fillRect(px, y, bw, h); px += bw + 1; }
+}
+// Rounded-square outline point, measured by arc length from the front centre.
+function rrAt(a, r, off, s) {
+  const f = a - r, R = r + off, A = a + off, arc = Math.PI / 2 * R, sg = s < 0 ? -1 : 1; s = Math.abs(s);
+  if (s <= f) return [s * sg, -A];
+  if (s <= f + arc) { const th = -Math.PI / 2 + (s - f) / R; return [(f + R * Math.cos(th)) * sg, -f + R * Math.sin(th)]; }
+  return [A * sg, -f + (s - f - arc)];
+}
+function bandGeometry(pointAt, s0, s1, z0, z1, n) {
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= n; i++) {
+    const s = s0 + (s1 - s0) * i / n, [x, y] = pointAt(s);
+    pos.push(x, y, z0, x, y, z1); uv.push(i / n, 0, i / n, 1);
+    if (i < n) { const k = i * 2; idx.push(k, k + 2, k + 1, k + 1, k + 2, k + 3); }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+function tealLoop(points, r) {
+  const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)), true);
+  return new THREE.Mesh(new THREE.TubeGeometry(curve, points.length, r, 6, true),
+    clipped(new THREE.MeshStandardMaterial({ color: 0x3fe0d6, emissive: 0x3fe0d6, emissiveIntensity: 0.8 })));
+}
+
+function buildJar(o, mm) {
+  const seam = 46;
+  const body = new THREE.Mesh(o.g, clipped(new THREE.MeshPhysicalMaterial({
+    color: 0xc4701c, roughness: 0.18, metalness: 0, transmission: 0.55, thickness: 0.5, ior: 1.5,
+    attenuationColor: new THREE.Color(0x8a3c06), attenuationDistance: 0.6, clearcoat: 1, clearcoatRoughness: 0.08 }), [regionPlane(false, seam)]));
+  const lid = new THREE.Mesh(o.g, clipped(new THREE.MeshPhysicalMaterial({ color: 0xd9d8d2, roughness: 0.5, clearcoat: 0.3 }), [regionPlane(true, seam)]));
+  // the label wraps all the way round, from 16 mm up (above the engraved ID) to 42 mm
+  const JL = ECHO_LABELS.jar, label = labelTex(JL, 12), outline = jarLoop(27.5, 15, 0.35);
+  const labelMesh = new THREE.Mesh(bandGeometry(outline, -outline.length_ / 2, outline.length_ / 2, 16, 16 + JL.h, 320),
+    clipped(new THREE.MeshStandardMaterial({ map: label, color: 0xcfcfcf, roughness: 0.85, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2 })));
+  const loop = [];
+  for (let i = 0; i < 160; i++) { const th = i / 160 * Math.PI * 2, c = Math.cos(th), s = Math.sin(th); loop.push([Math.sign(c) * 12.5 + 15.1 * c, Math.sign(s) * 12.5 + 15.1 * s, seam]); }
+  body.renderOrder = 1;
+  mm.add(labelMesh, tealLoop(loop, 0.45));
+  return [body, lid];
+}
+
+function buildSensor(o, mm) {
+  const body = new THREE.Mesh(o.g, clipped(new THREE.MeshPhysicalMaterial({ color: 0x8f969b, roughness: 0.55, clearcoat: 0.2, clearcoatRoughness: 0.4 })));
+  const fabric = canvasTex(512, 512, (c, w, h) => {
+    c.fillStyle = '#cfcac0'; c.fillRect(0, 0, w, h);
+    for (let i = 0; i < 9000; i++) { c.fillStyle = `rgba(0,0,0,${Math.random() * 0.06})`; c.fillRect(Math.random() * w, Math.random() * h, 2, 1); }
+  });
+  const patch = new THREE.Mesh(new THREE.CylinderGeometry(29, 29, 0.7, 96), clipped(new THREE.MeshStandardMaterial({ map: fabric, roughness: 1 })));
+  patch.rotation.x = Math.PI / 2; patch.position.z = 0.35;
+  // the round label on top (Ø36 mm), bent to follow the dome: z rises from 9.5 mm at r 22 to 12 mm at the centre
+  const SL = ECHO_LABELS.sensor, top = labelTex(SL, 24);
+  const dg = new THREE.RingGeometry(0.01, SL.w / 2, 96, 24), pa = dg.attributes.position;
+  for (let i = 0; i < pa.count; i++) { const rr = Math.hypot(pa.getX(i), pa.getY(i)); pa.setZ(i, 9.5 + 2.5 * Math.sin(Math.PI / 2 * (1 - rr / 22)) + 0.06); }
+  dg.computeVertexNormals();
+  const decal = new THREE.Mesh(dg, clipped(new THREE.MeshStandardMaterial({ map: top, transparent: true, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -4 })));
+  const loop = [];
+  for (let i = 0; i < 128; i++) { const th = i / 128 * Math.PI * 2; loop.push([Math.cos(th) * 25.15, Math.sin(th) * 25.15, 6.2]); }
+  mm.add(patch, decal, tealLoop(loop, 0.45));
+  return [body];
+}
+
+function buildKit(o, mm) {
+  const neck = 20;
+  const base = new THREE.Mesh(o.g, clipped(new THREE.MeshPhysicalMaterial({ color: 0xd6dadc, roughness: 0.3, clearcoat: 0.8 }), [regionPlane(false, neck)]));
+  const tube = new THREE.Mesh(o.g, clipped(new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: 0.04, transmission: 1, thickness: 0.15, ior: 1.45, clearcoat: 1 }), [regionPlane(true, neck), regionPlane(false, 72.6)]));   // glass stops under the cap
+  const liquid = new THREE.Mesh(new THREE.CylinderGeometry(5.4, 5.4, 30, 48), clipped(new THREE.MeshStandardMaterial({ color: 0xe6e1d2, roughness: 0.35, emissive: 0x2a2a24 })));
+  liquid.rotation.x = Math.PI / 2; liquid.position.z = 21 + 15;
+  const foam = new THREE.Mesh(new THREE.CylinderGeometry(5.4, 5.4, 2.2, 48), clipped(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.9 })));
+  foam.rotation.x = Math.PI / 2; foam.position.z = 52;
+  // the label goes most of the way round the tube (centred on the front), 24–72 mm, its text running up the tube
+  const KL = ECHO_LABELS.kit, label = labelTex(KL, 20), half = KL.w / 2 / 6.5;
+  const ring = (s) => [Math.sin(s) * 6.75, -Math.cos(s) * 6.75];
+  const labelMesh = new THREE.Mesh(bandGeometry(ring, -half, half, 24, 24 + KL.h, 96),
+    clipped(new THREE.MeshStandardMaterial({ map: label, color: 0xcfcfcf, roughness: 0.85, side: THREE.DoubleSide })));
+  const loop = [];
+  for (let i = 0; i < 128; i++) { const th = i / 128 * Math.PI * 2; loop.push([Math.cos(th) * 20.15, Math.sin(th) * 20.15, 6.6]); }
+  // the top of the tube above the label: white, with the same rounded end as the printed kit (r 6.5, from 76.5 to 83 mm)
+  const capMat = clipped(new THREE.MeshPhysicalMaterial({ color: 0xeef0f1, roughness: 0.35, clearcoat: 0.5 }));
+  const cap = new THREE.Mesh(new THREE.CylinderGeometry(6.6, 6.6, 76.5 - 72.4, 48, 1, true), capMat);
+  cap.rotation.x = Math.PI / 2; cap.position.z = (72.4 + 76.5) / 2;
+  const capTop = new THREE.Mesh(new THREE.SphereGeometry(6.6, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), capMat);
+  capTop.rotation.x = Math.PI / 2; capTop.position.z = 76.5;
+  mm.add(liquid, foam, labelMesh, cap, capTop, tealLoop(loop, 0.45));
+  tube.renderOrder = 2;
+  return [base, tube];
+}
+
+// ---------------- sound: the cleaned reference clip (sounds/echo-scan.m4a, 10 s) ----------------
+let meter = null, peakSeen = 0, ac = null, master = null, comp = null;
+// On iPad, Web Audio can show as playing yet come out silent (silent mode / ringer route).
+// Sending it through a normal media player element makes it follow the media volume instead.
+const IOS = /iPad|iPhone/.test(navigator.userAgent) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(navigator.userAgent)) || /route=player/.test(location.search);
+let player = null, clipBuf = null, clipDecoding = null;
+const clipBytes = fetch('sounds/echo-scan.m4a').then(r => r.arrayBuffer());   // loaded once, kept in memory
+const voiceBytes = {}, voiceBuf = {};
+for (const k in VOICE) voiceBytes[k] = fetch('sounds/voice/' + VOICE[k].file + '.m4a').then(r => r.arrayBuffer());
+voiceBytes.intro = fetch('sounds/voice/intro.m4a').then(r => r.arrayBuffer());
+VOICE.intro = { file: 'intro' };
+function loadVoices() {
+  for (const k in VOICE) if (!voiceBuf[k]) voiceBuf[k] = voiceBytes[k]
+    .then(b => new Promise((ok, no) => ac.decodeAudioData(b.slice(0), ok, no)))
+    .catch(e => { console.warn('voice failed to load', k, e); voiceBuf[k] = null; return null; });
+}
+function loadClip() {
+  if (clipBuf || clipDecoding) return clipDecoding;
+  clipDecoding = clipBytes.then(b => new Promise((ok, no) => ac.decodeAudioData(b.slice(0), ok, no)))
+    .then(b => { clipBuf = b; }).catch(e => { console.warn('scan sound failed to load', e); clipDecoding = null; });
+  return clipDecoding;
+}
+function audio() {
+  if (navigator.audioSession) try { navigator.audioSession.type = 'playback'; } catch (e) {}
+  if (!ac) {
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = 0.9;
+    comp = ac.createDynamicsCompressor(); comp.threshold.value = -6; comp.ratio.value = 3;
+    master.connect(comp);
+    if (IOS && ac.createMediaStreamDestination) {
+      const dest = ac.createMediaStreamDestination(); comp.connect(dest);
+      player = document.createElement('audio'); player.setAttribute('playsinline', ''); player.srcObject = dest.stream;
+      document.body.appendChild(player);
+    } else comp.connect(ac.destination);
+    meter = ac.createAnalyser(); meter.fftSize = 2048; comp.connect(meter);
+    loadClip(); loadVoices(); nextIntro = performance.now() / 1000 + 1.5;
+  }
+  if (ac.state === 'suspended') ac.resume();
+  // iOS only unlocks audio once a sound actually starts inside a tap or key press
+  const s = ac.createBufferSource(); s.buffer = ac.createBuffer(1, 1, 22050); s.connect(ac.destination); s.start(0);
+  if (player && player.paused) player.play().catch(() => {});
+  document.getElementById('snd').classList.add('off');
+  return ac;
+}
+// Unlocking iOS audio on every key press makes the iPad drop the keys that follow (tested: 4 of 30 arrived),
+// so a key only unlocks audio while it isn't running yet; once it is, key presses leave audio alone.
+const audioReady = () => ac && ac.state === 'running' && (!player || !player.paused);
+for (const ev of ['pointerdown', 'touchend']) addEventListener(ev, audio, { capture: true });
+addEventListener('keydown', () => { if (!audioReady()) audio(); }, { capture: true });
+// Full screen hides Safari's bar and the time/battery row. Safari only allows it when a tap ends
+// (not when it starts), so it listens for the finger lifting; it asks again if the visitor ever leaves it.
+function goFull() {
+  const el = document.documentElement, fs = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!fs || document.fullscreenElement || document.webkitFullscreenElement) return;
+  try { const r = fs.call(el); if (r && r.catch) r.catch(e => console.warn('full screen refused', e)); } catch (e) { console.warn('full screen refused', e); }
+}
+for (const ev of ['touchend', 'click', 'keydown']) addEventListener(ev, goFull, { capture: true });
+addEventListener('pointerdown', () => { if (!S && !introOn) setTimeout(playIntro, 300); });   // tap on idle = hear ECHO now
+window.echoAudio = () => ({ state: ac && ac.state, peak: peakSeen, clip: !!clipBuf });
+setInterval(() => { if (!meter) return; const d = new Float32Array(meter.fftSize); meter.getFloatTimeDomainData(d); for (const v of d) peakSeen = Math.max(peakSeen, Math.abs(v)); }, 20);
+// one clip plays per scan; a new scan or a lift fades the old one out
+let clip = null;
+const CLIP_VOL = 0.2;    // scan sound level (1 = as recorded); kept low so it never overwhelms
+function playClip(from, len, fadeIn) {
+  if (!ac || !clipBuf) return;
+  stopClip(0.15);
+  const t = ac.currentTime, src = ac.createBufferSource(), g = ac.createGain();
+  src.buffer = clipBuf; src.connect(g).connect(master);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(CLIP_VOL, t + fadeIn);
+  if (len < clipBuf.duration - from) { g.gain.setValueAtTime(CLIP_VOL, t + len - 0.4); g.gain.linearRampToValueAtTime(0, t + len); }
+  src.start(t, from, len); clip = { src, g };
+  src.onended = () => { if (clip && clip.src === src) clip = null; };
+}
+function stopClip(fade) {
+  if (!clip || !ac) return; const t = ac.currentTime, c = clip; clip = null;
+  c.g.gain.cancelScheduledValues(t); c.g.gain.setValueAtTime(c.g.gain.value, t); c.g.gain.linearRampToValueAtTime(0, t + fade);
+  c.src.stop(t + fade + 0.05);
+}
+// The clip already carries its own beats (impacts near 0.2 s, 3.9 s and 8 s), so the
+// other cue points stay silent instead of stacking extra sounds on top.
+// ECHO's voice: its loudness drives the light in the portrait
+let voice = null, vMeter = null;
+async function playVoice(k) {
+  stopVoice(0.2);
+  if (!ac || !voiceBuf[k]) return;
+  const buf = await voiceBuf[k]; if (!buf || !S || S.lift || S.key !== k) return;
+  if (!vMeter) { vMeter = ac.createAnalyser(); vMeter.fftSize = 1024; }
+  // play the chosen stretches back to back through one gain, so stopVoice() stops them all
+  const g = ac.createGain(); g.connect(master); g.connect(vMeter); g.gain.value = 1;
+  let at = ac.currentTime + 0.02, total = 0; const srcs = [];
+  for (const [a, b] of VOICE[k].parts) {
+    const len = (b == null ? buf.duration : b) - a, src = ac.createBufferSource();
+    src.buffer = buf; src.connect(g); src.start(at, a, len); srcs.push(src); at += len; total += len;
+  }
+  voice = { src: { stop: t => srcs.forEach(x => x.stop(t)) }, g };
+  S.voiceDur = total;
+}
+function stopVoice(fade) {
+  if (!voice || !ac) return; const t = ac.currentTime, v = voice; voice = null;
+  v.g.gain.cancelScheduledValues(t); v.g.gain.setValueAtTime(v.g.gain.value, t); v.g.gain.linearRampToValueAtTime(0, t + fade);
+  v.src.stop(t + fade + 0.05);
+}
+// idle: ECHO introduces itself, then waits; it repeats on a timer because nothing here senses people
+const INTRO = [[0, "It's 2036. The health data you shared ten years ago is still travelling. I follow it."],
+  [7.8, "Choose a specimen. Place it on the platform. I'll show you where its data went."],
+  [12.5, 'Every record leaves an echo. Most people never hear theirs.']];
+const INTRO_GAP = 40;    // seconds of quiet between intros
+let introOn = 0, introDur = 17, nextIntro = 0, introLine = -1;
+async function playIntro() {
+  if (S || !ac || introOn) return;
+  const buf = await voiceBuf.intro; if (!buf || S) return;
+  stopVoice(0.1);
+  if (!vMeter) { vMeter = ac.createAnalyser(); vMeter.fftSize = 1024; }
+  const src = ac.createBufferSource(), g = ac.createGain();
+  src.buffer = buf; src.connect(g); g.connect(master); g.connect(vMeter); src.start(); voice = { src, g };
+  introOn = performance.now() / 1000; introDur = buf.duration; introLine = -1;
+}
+function idleTick(now) {
+  if (ac && ac.state === 'running' && !introOn && now > nextIntro) { nextIntro = now + 1e9; playIntro(); }
+  const cap = $('icap');
+  if (introOn) {
+    const it = now - introOn; let li = -1;
+    INTRO.forEach((l, i) => { if (it >= l[0]) li = i; });
+    if (it > introDur + 0.6) { li = -1; introOn = 0; nextIntro = now + INTRO_GAP; }
+    if (li !== introLine) {
+      introLine = li; cap.classList.add('fade');
+      setTimeout(() => { if (introLine === li && li >= 0) { cap.textContent = INTRO[li][1]; cap.classList.remove('fade'); } }, 450);
+    }
+  }
+  window.ECHO_STATE.level = voiceLevel();
+}
+function leaveIdle() {
+  introOn = 0; introLine = -1; $('icap').classList.add('fade'); stopVoice(0.3);
+  document.body.classList.remove('idle');
+  setTimeout(() => { if (!document.body.classList.contains('act2') && !document.body.classList.contains('idle')) window.ECHO_STATE.on = false; }, 600);
+}
+
+const vData = new Float32Array(1024);
+function voiceLevel() {
+  if (!voice || !vMeter) return 0;
+  vMeter.getFloatTimeDomainData(vData); let s = 0; for (const x of vData) s += x * x;
+  return Math.min(1, Math.sqrt(s / vData.length) * 6);
+}
+
+const sfx = {
+  power() { if (!clipBuf && ac) loadClip().then(() => { if (S && !S.lift) playClip(0, 10, 0.05); }); else playClip(0, 10, 0.05); },
+  // object lifted: clip fades, plus the gentle falling note from v6 (soft filter + small room reverb)
+  release() {
+    stopClip(0.6); stopVoice(0.5); if (!ac) return; const t = ac.currentTime;
+    sfx.room();
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine';
+    o.frequency.setValueAtTime(880, t); o.frequency.exponentialRampToValueAtTime(440, t + 0.7);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.12, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.83);
+    o.connect(g).connect(sfx._room); o.start(t); o.stop(t + 1);
+  },
+  room() {
+    if (!ac) return;
+    if (!sfx._room) {
+      const soft = ac.createBiquadFilter(); soft.type = 'lowpass'; soft.frequency.value = 3000;
+      const len = ac.sampleRate * 1.8, ir = ac.createBuffer(2, len, ac.sampleRate);
+      for (let c = 0; c < 2; c++) { const d = ir.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3); }
+      const verb = ac.createConvolver(), wet = ac.createGain(); verb.buffer = ir; wet.gain.value = 0.35;
+      soft.connect(master); soft.connect(verb); verb.connect(wet); wet.connect(master);
+      sfx._room = soft;
+    }
+  },
+  test() { playClip(0, 2.5, 0.05); },
+  // the question selection moves: one very soft, short tick
+  select() {
+    if (!ac) return; sfx.room(); const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'sine'; o.frequency.value = 1318.5;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.035, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+    o.connect(g).connect(sfx._room); o.start(t); o.stop(t + 0.25);
+  },
+  // a notification arrives: two soft rising sine notes through the same room as the lift note
+  notice() {
+    if (!ac) return; sfx.room(); const t = ac.currentTime;
+    [[659.3, 0], [987.8, 0.13]].forEach(([f, d]) => {
+      const o = ac.createOscillator(), g = ac.createGain(); o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t + d); g.gain.exponentialRampToValueAtTime(0.09, t + d + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.9);
+      o.connect(g).connect(sfx._room); o.start(t + d); o.stop(t + d + 1);
+    });
+  },   // tap on idle screen = short sound check
+  scan() {}, scanAt() {}, tick() {}, blip() {}, lock() {}, match() {}, hum() {},
+};
+
+// ---------------- HUD content ----------------
+const $ = id => document.getElementById(id);
+const SOURCES = ['reg.accredit', 'release-notes', 'pub-ack', 'aggr-filing', 'broker-cat', 'ds-mirror', 'trial-reg', 'insurer-feed', 'research-db', 'adtech-seg'];
+const CLASSES = [['Accredited-access registers', 1204], ['Dataset release notes', 38410], ['Publication acknowledgements', 212880], ['Aggregate disclosure filings', 9412], ['Data-broker catalogues', 640]];
+for (let i = 0; i < 20; i++) $('seg').appendChild(document.createElement('i'));
+$('bars').innerHTML = CLASSES.map(([c, n]) => `<div class="sc"><div class="a"><span>${c}</span><b>MATCH</b></div><i><u></u></i><div class="s"><span>0</span> of ${fmtN(n)} checked</div></div>`).join('');
+function fmtN(n) { return Math.round(n).toLocaleString('en-GB'); }
+const hex = () => Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0');
+function logLine(cls, text) {
+  const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = text;
+  const log = $('log'); log.appendChild(d); while (log.children.length > 15) log.firstChild.remove();
+}
+const fmt = n => Math.round(n).toLocaleString('en-GB');
+
+// ---------------- the internet-trace network (2D overlay) ----------------
+let nodes = [], pulses = [];
+function spawnNode(t, label, hit) {
+  const parent = nodes.length && Math.random() < 0.7 && !hit ? nodes[Math.floor(Math.random() * nodes.length)] : null;
+  const ang = parent ? parent.ang + (Math.random() - 0.5) * 0.9 : Math.random() * Math.PI * 2;
+  const dist = hit ? 0.7 + Math.random() * 0.12 : Math.min(1.3, (parent ? parent.dist : 0.66) + 0.05 + Math.random() * 0.14);
+  const n = { ang, dist, born: t, parent, hit, label: null, r: 0.8 + Math.random() * 1.6 };
+  nodes.push(n); return n;
+}
+function nodeXY(n, cx, cy) { return [cx + Math.cos(n.ang) * n.dist * W * 0.36, cy + Math.sin(n.ang) * n.dist * Hs * 0.46]; }
+
+function ringXY(n, cx, cy) { return [cx + Math.cos(n.ang) * 0.34 * Hs, cy + Math.sin(n.ang) * 0.34 * Hs]; }
+function drawNet(t, cx, cy, alpha) {
+  nctx.clearRect(0, 0, W, Hs); return;
+  if (alpha <= 0) return;
+  nctx.globalAlpha = alpha;
+  // rotating reticle rings around the object
+  nctx.strokeStyle = 'rgba(63,224,214,.12)'; nctx.lineWidth = 1;
+  for (const [r, dash, spd] of [[0.34, [1, 3], 0.03]]) {
+    nctx.save(); nctx.translate(cx, cy); nctx.rotate(t * spd); nctx.setLineDash(dash);
+    nctx.beginPath(); nctx.arc(0, 0, r * Hs, 0, Math.PI * 2); nctx.stroke(); nctx.restore();
+  }
+  nctx.setLineDash([]);
+  for (let i = 0; i < 72; i++) {
+    const a = i / 72 * Math.PI * 2 + t * 0.02, r0 = 0.34 * Hs, r1 = r0 + (i % 6 ? 4 : 10);
+    nctx.beginPath(); nctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0); nctx.lineTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1); nctx.stroke();
+  }
+  // links and nodes
+  for (const n of nodes) {
+    const age = t - n.born; if (age < 0) continue;
+    const [x, y] = nodeXY(n, cx, cy);
+    const [px, py] = n.parent ? nodeXY(n.parent, cx, cy) : ringXY(n, cx, cy);
+    const g = Math.min(1, age / 0.35), ex = px + (x - px) * g, ey = py + (y - py) * g;
+    nctx.strokeStyle = n.hit ? 'rgba(220,255,250,.85)' : 'rgba(63,224,214,.16)'; nctx.lineWidth = n.hit ? 1.2 : 0.8;
+    nctx.beginPath(); nctx.moveTo(px, py); nctx.lineTo(ex, ey); nctx.stroke();
+    if (g < 1) continue;
+    nctx.fillStyle = n.hit ? '#eafffd' : 'rgba(110,240,230,.8)';
+    nctx.beginPath(); nctx.arc(x, y, n.hit ? 3.2 : n.r, 0, Math.PI * 2); nctx.fill();
+    if (n.hit) {
+      const pr = 6 + 10 * ((t * 1.4) % 1);
+      nctx.strokeStyle = `rgba(63,224,214,${1 - (t * 1.4) % 1})`; nctx.beginPath(); nctx.arc(x, y, pr, 0, Math.PI * 2); nctx.stroke();
+
+    } else if (n.label) {
+      nctx.font = '9px PlexMono, monospace'; nctx.fillStyle = `rgba(160,220,225,${Math.min(0.55, age)})`;
+      nctx.fillText(n.label, x + 5, y - 4);
+    }
+  }
+  // data pulses travelling back toward the object
+  for (const p of pulses) {
+    const k = (t - p.born) / p.dur; if (k < 0 || k > 1) continue;
+    const [x, y] = nodeXY(p.n, cx, cy), [px, py] = p.n.parent ? nodeXY(p.n.parent, cx, cy) : ringXY(p.n, cx, cy);
+    nctx.fillStyle = '#c8fff8'; nctx.beginPath(); nctx.arc(x + (px - x) * k, y + (py - y) * k, 1.5, 0, Math.PI * 2); nctx.fill();
+  }
+  pulses = pulses.filter(p => t - p.born < p.dur);
+  nctx.globalAlpha = 1;
+}
+
+function drawSpark(t, level) {
+  const c = spark.getContext('2d'), w = spark.width, h = spark.height;
+  c.clearRect(0, 0, w, h); c.strokeStyle = 'rgba(63,224,214,.9)'; c.lineWidth = DPR; c.beginPath();
+  for (let i = 0; i <= 80; i++) {
+    const x = i / 80 * w, v = 0.5 + 0.5 * Math.sin(i * 0.7 + t * 9) * Math.sin(i * 0.23 - t * 3) * level + (Math.random() - 0.5) * 0.25 * level;
+    i ? c.lineTo(x, h - v * h * 0.85) : c.moveTo(x, h - v * h * 0.85);
+  }
+  c.stroke();
+}
+function drawOrb(t, cov) {
+  const c = orb.getContext('2d'), w = orb.width, h = orb.height, cx = h * 0.55, cy = h / 2;
+  c.clearRect(0, 0, w, h); c.lineWidth = 2 * DPR;
+  for (let i = 0; i < 3; i++) {
+    const r = h * (0.42 - i * 0.11);
+    c.strokeStyle = 'rgba(255,255,255,.08)'; c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.stroke();
+    c.strokeStyle = i ? 'rgba(63,224,214,.6)' : '#3fe0d6';
+    const a0 = t * (0.8 + i * 0.5) * (i % 2 ? -1 : 1);
+    c.beginPath(); c.arc(cx, cy, r, a0, a0 + Math.PI * 2 * cov * (1 - i * 0.2)); c.stroke();
+  }
+  c.fillStyle = '#eaf6ff'; c.font = `500 ${14 * DPR}px PlexMono, monospace`; c.fillText((cov * 100).toFixed(1) + '%', h * 1.15, cy - 2 * DPR);
+  c.fillStyle = 'rgba(200,228,240,.55)'; c.font = `${10 * DPR}px PlexMono, monospace`; c.fillText('OF KNOWN SOURCES', h * 1.15, cy + 14 * DPR);
+}
+
+// ---------------- scan sequence ----------------
+let S = null;             // the active scan
+const hud = $('hud'), idle = $('idle'), calls = $('calls');
+
+function glitch() {
+  $('glitch').classList.add('on'); document.body.classList.add('jit');
+  setTimeout(() => document.body.classList.remove('jit'), 50);
+  setTimeout(() => $('glitch').classList.remove('on'), 180);
+}
+
+async function start(k) {
+  const def = OBJECTS[k]; if (!def) return;
+  audio();
+  const o = await loadObject(def.file);
+  teardown(); leaveIdle();
+  regionPlanes = [];
+  const group = new THREE.Group();
+  const mm = new THREE.Group(); mm.rotation.x = -Math.PI / 2; mm.scale.setScalar(o.s); mm.position.copy(o.t).multiplyScalar(o.s);
+  const real = def.build(o, mm);
+  const frame = makeFrame(o.g.boundingBox);
+  group.add(...real, mm, new THREE.LineSegments(o.lines.geo, lineMat), new THREE.Points(o.pts, ptsMat), makeCollar(2600), frame, makeFloor());
+  group.position.y = -o.H / 2 - 0.05;
+  rig.add(group);
+  for (const p of regionPlanes) p.constant = (p.above ? -1 : 1) * (group.position.y + p.mm * o.s);
+
+  $('tid').textContent = def.id; $('tnm').textContent = def.name;
+  $('kv').innerHTML = def.kv.map(([a, b]) => `<div><span>${a}</span><span>${b}</span></div>`).join('');
+  $('ds').innerHTML = def.datasets.map(d => `<div class="d"><div class="a"><span>${d.n}</span><b>—</b></div><div class="s">${d.who} · ${d.why}</div></div>`).join('');
+  $('log').innerHTML = '';
+  calls.innerHTML = '';
+  $('oname-t').textContent = def.title; $('ostat').textContent = def.status[0]; $('oname').classList.add('on');
+
+  nodes = []; pulses = [];
+  S = { key: k, hitAt: [], def, o, group, mm, frame, t0: performance.now() / 1000, lift: 0, liftFrom: 0, ticks: 0, phase: '', hits: 0, lastLog: 0, lastBlip: 0, locked: false, ended: false };
+  U.front.value = 1.1; U.done.value = 0; U.fade.value = 1;
+  hud.classList.add('on'); idle.classList.add('off');
+  glitch(); sfx.power(); sfx.scan(true);
+}
+
+function teardown() {
+  document.body.classList.remove('act2', 'act3', 'ask', 'out'); $('notes').innerHTML = ''; document.body.classList.add('idle'); window.ECHO_STATE.on = true;
+  nextIntro = performance.now() / 1000 + 6;   // short rest before ECHO speaks again
+  if (S) { rig.remove(S.group); S = null; }
+  calls.innerHTML = ''; $('oname').classList.remove('on');
+}
+
+function lift() {
+  if (!S || S.lift) return;
+  S.lift = performance.now() / 1000; S.liftFrom = U.front.value;
+  glitch(); sfx.release(); sfx.scan(false); sfx.hum(false);
+  if (S.act2) { document.body.classList.add('out'); $('estate').innerHTML = 'OBJECT REMOVED · NOTHING KEPT'; }
+  for (const el of $('ds').children) el.querySelector('.a span').textContent = '—— ' + hex();
+  $('phase').textContent = 'RELEASED · NOTHING STORED';
+}
+
+const clamp01 = x => x < 0 ? 0 : x > 1 ? 1 : x;
+const ease = x => { x = clamp01(x); return x * x * (3 - 2 * x); };
+const v3 = new THREE.Vector3();
+function toScreen(v) { v.project(camera); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * Hs]; }
+
+function tick() {
+  const now = performance.now() / 1000;
+  U.time.value = now;
+  $('clock').textContent = '2036-11-13 14:02:' + String(11 + Math.floor(now) % 49).padStart(2, '0');
+  if (!S) { idleTick(now); return requestAnimationFrame(tick); }   // idle: only ECHO's face is drawn
+
+  const t = now - S.t0, o = S.o, def = S.def;
+  let netAlpha = 1;
+
+  if (!S.lift) {
+    // build: top first, growing downward
+    const b = clamp01((t - T.buildStart) / (T.buildEnd - T.buildStart));
+    U.front.value = 1.02 - (b < 0.5 ? 2 * b * b : 1 - Math.pow(-2 * b + 2, 2) / 2) * 1.05;
+    U.done.value = ease((t - T.lock) / 0.45);
+    U.ringA.value = (t > 0.15 && t < T.lock + 0.2) ? 1 - ease((t - T.buildEnd + 0.1) / 0.4) : 0;
+    if (t >= T.buildStart && t < T.buildEnd && t - S.ticks * 0.2 > T.buildStart) { S.ticks++; sfx.tick(); }
+    if (t >= T.lock && !S.locked) { S.locked = true; sfx.scan(false); sfx.lock(); sfx.hum(true); }
+    S.matchTimes = T.matches;
+    for (let i = S.hits; i < T.matches.length && t >= T.matches[i]; i++) {
+      S.hits++;
+      sfx.match();
+      $('ds').children[i].classList.add('hit'); S.hitAt = S.hitAt || []; S.hitAt[i] = t;
+      logLine('h', `MATCH  ${def.datasets[i].n}`);
+    }
+    if (t >= T.complete && !S.ended) { S.ended = true; sfx.hum(false); }
+  } else {
+    // lifted: the build runs backwards, bottom up, then everything clears
+    const k = clamp01((now - S.lift) / 0.8);
+    U.front.value = S.liftFrom + (1.1 - S.liftFrom) * k * k;
+    U.ringA.value = k < 0.9 ? 0.9 : 0;
+    netAlpha = 1 - clamp01((now - S.lift) / 0.5);
+    U.fade.value = 1 - clamp01((now - S.lift - 0.6) / 0.3);
+    if (now - S.lift > 0.95) { teardown(); hud.classList.remove('on'); idle.classList.remove('off'); nctx.clearRect(0, 0, W, Hs); composer.render(); return requestAnimationFrame(tick); }
+  }
+
+  if (!S.lift && t >= T.handoff) think(t, now);
+  sfx.scanAt(U.front.value);
+  // scan plane, collar, brackets, camera
+  const gy = S.group.position.y, fy = clamp01(U.front.value) * o.H;
+  reveal.constant = -(gy + U.front.value * o.H);
+  U.ringY.value = fy;
+  const ri = Math.min(o.lines.radius.length - 1, Math.max(0, Math.floor(clamp01(U.front.value) * o.lines.radius.length)));
+  U.ringR.value = o.lines.radius[ri] || 0.5;
+  const snap = 1.6 - 0.35 * ease(t / 0.2), tight = 1.25 - 0.21 * ease((t - T.lock) / 0.3);
+  S.frame.scale.setScalar(S.lift ? 1.04 + 0.8 * clamp01((now - S.lift) / 0.6) : (t < T.lock ? snap : tight));
+  S.frame.material.opacity = S.lift ? U.fade.value : clamp01(t / 0.1);
+  S.group.getObjectByName('glow').material.opacity = 0.12 + 0.12 * U.done.value;
+  rig.rotation.y = -0.25 + 0.35 * Math.sin(t * 0.35);
+  camera.position.set(0, 1.5, 10.6 - 0.9 * ease(t / 3)); camera.lookAt(0, 0, 0);
+  rig.updateMatrixWorld(true);
+
+  // HUD: counters, bars, segments, log
+  const proc = clamp01((t - T.lock) / (T.complete - T.lock));
+  $('ostat').textContent = S.lift ? 'Object removed · nothing kept' : t < T.lock ? def.status[0] : t < T.complete ? def.status[1] : `${def.datasets.filter(d => d.hit).length} probable uses found`;
+  const phase = S.lift ? $('phase').textContent : t < T.buildStart ? 'OBJECT DETECTED' : t < T.lock ? 'READING OBJECT' : t < T.complete ? 'TRACING ACROSS SOURCES' : 'TRACE COMPLETE · HANDING TO ECHO';
+  $('phase').textContent = phase;
+  const fill = Math.round((t < T.lock ? clamp01(t / T.lock) * 0.3 : 0.3 + proc * 0.7) * 20);
+  [...$('seg').children].forEach((el, i) => el.classList.toggle('f', i < fill));
+  $('c1').textContent = fmt(1.2e6 * Math.pow(proc, 1.8) + (t > 0.3 ? 40 * t : 0));
+  $('c2').textContent = fmt(3.84e7 * Math.pow(proc, 1.5));
+  $('c3').textContent = S.hits;
+  [...$('bars').children].forEach((el, i) => {
+    const v = S.lift ? 0 : clamp01((t - T.buildStart) / (T.complete - T.buildStart) * (1.25 - i * 0.07));
+    el.querySelector('u').style.width = (v * 100).toFixed(1) + '%';
+    el.querySelector('.s span').textContent = fmtN(v * CLASSES[i][1]);
+    el.querySelector('.a b').classList.toggle('on', def.datasets.some((d, j) => d.cls === i && d.hit && j < S.hits));
+  });
+  if (!S.lift && t > 0.3 && !S.ended && now - S.lastLog > (t < T.lock ? 0.16 : 0.07)) {
+    S.lastLog = now;
+    const src = SOURCES[Math.floor(Math.random() * SOURCES.length)], r = Math.random();
+    logLine(r > 0.92 ? 'm' : '', `› ${src}/${hex()}  ${r > 0.92 ? 'partial' : r > 0.5 ? '0 match' : 'no access'}`);
+  }
+  if (!S.lift) [...$('ds').children].forEach((el, i) => {
+    const d = def.datasets[i], b = el.querySelector('b');
+    if (d.hit && S.hitAt && S.hitAt[i] !== undefined) b.textContent = Math.round(d.pct * ease((t - S.hitAt[i]) / 0.8)) + '%';
+    else if (!d.hit && t > T.complete - 1) b.textContent = d.pct + '%';
+    else if (!d.hit && t > T.lock) b.textContent = Math.round(Math.random() * 9) + '%';
+  });
+
+  // the trace network grows out from the object
+  if (!S.lift && t > T.buildStart && !S.ended) {
+    const rate = t < T.lock ? 6 : 26 + 30 * proc;
+    
+    if (nodes.length && Math.random() < 0.5) { const n = nodes[Math.floor(Math.random() * nodes.length)]; pulses.push({ n, born: t, dur: 0.4 + Math.random() * 0.4 }); }
+    if (t > T.lock && now - S.lastBlip > 0.09) { S.lastBlip = now; if (Math.random() < 0.6) sfx.blip(); }
+  }
+  v3.set(0, o.H / 2, 0); S.group.localToWorld(v3);
+  const [cx, cy] = toScreen(v3);
+  drawNet(t, cx, cy, netAlpha);
+
+  // callouts follow their anchor on the object
+  const callEls = calls.children;
+  def.calls.forEach((c, i) => {
+    const el = callEls[i]; if (!el) return;
+    v3.set(...c.p); S.mm.localToWorld(v3);
+    const worldY = v3.y;
+    const [ax, ay] = toScreen(v3);
+    const shown = !S.lift && worldY >= gy + U.front.value * o.H - 0.02 && t > T.buildStart + 0.3;
+    el.classList.toggle('on', shown);
+    const lx = cx + c.side * W * 0.17, ly = ay + (c.dy || 0);
+    const r = el.getBoundingClientRect();
+    el.style.transform = `translate(${c.side < 0 ? lx - r.width : lx}px, ${ly - r.height / 2}px)`;
+    if (shown) {
+      nctx.strokeStyle = c.main ? 'rgba(63,224,214,.95)' : 'rgba(63,224,214,.55)'; nctx.lineWidth = 1;
+      const ex = lx - c.side * 24; nctx.beginPath(); nctx.moveTo(ax, ay); nctx.lineTo(ex, ly); nctx.lineTo(lx, ly); nctx.stroke();
+      nctx.fillStyle = '#3fe0d6'; nctx.beginPath(); nctx.arc(ax, ay, 2.5, 0, Math.PI * 2); nctx.fill();
+    }
+  });
+
+  // once the scan view has faded out there is no need to keep drawing it
+  if (!(S.act2 && now - S.act2 > 1.2)) composer.render();
+  requestAnimationFrame(tick);
+}
+
+// ---------------- Act 2: the scan clears away and ECHO thinks out loud ----------------
+function enterEcho(def, now) {
+  S.act2 = now; stopClip(0.8);   // the scan sound is 10 s long; let it go as ECHO takes over S.line = -1; S.voiceOn = false;
+  const name = def.kv.find(r => r[0] === 'PROFILE')[1];
+  $('eobj').textContent = def.title.toUpperCase() + ' · ' + def.id; $('eprof').textContent = name;
+  $('say').innerHTML = ''; $('estate').innerHTML = '<i>●</i> THINKING';
+  // the matched datasets wait at the edges, then flow into ECHO one per line
+  const spots = [['left', '2.6vw', '26vh'], ['right', '2.6vw', '42vh'], ['left', '2.6vw', '58vh']];
+  $('chips').innerHTML = def.datasets.filter(d => d.hit).map((d, i) =>
+    `<div class="chip" style="${spots[i][0]}:${spots[i][1]};top:${spots[i][2]}"><div class="k">MATCHED DATASET</div>` +
+    `<div class="n"><span>${d.n}</span><b>${d.pct}%</b></div><div class="w">${d.who}</div></div>`).join('');
+  [...$('chips').children].forEach((c, i) => setTimeout(() => c.classList.add('in'), 700 + i * 200));
+  document.body.classList.add('act2');
+  window.ECHO_STATE.on = true;
+}
+function absorb(i) {
+  const c = $('chips').children[i]; if (!c) return;
+  const r = c.getBoundingClientRect();
+  const dx = innerWidth / 2 - (r.left + r.width / 2), dy = innerHeight * 0.41 - (r.top + r.height / 2);
+  c.classList.add('go'); c.style.transform = `translate(${dx}px, ${dy}px) scale(.15)`;
+  setTimeout(() => { window.ECHO_STATE.pulse = 1; }, 1100);
+}
+function think(t, now) {
+  if (!S.act2) enterEcho(S.def, now);
+  const V = VOICE[S.key];
+  if (t >= T.voice && !S.voiceOn) { S.voiceOn = true; playVoice(S.key); }
+  const vt = t - T.voice;
+  let li = -1; V.lines.forEach((l, i) => { if (vt >= l[0]) li = i; });
+  if (li !== S.line) {
+    const say = $('say'); say.classList.add('fade');
+    const txt = li >= 0 ? V.lines[li][1] : '';
+    setTimeout(() => { say.innerHTML = txt; say.classList.remove('fade'); }, 350);
+    // the three matched datasets flow into ECHO one after another while it says the first line
+    if (li === 0) [0, 1, 2].forEach(i => setTimeout(() => { if (S && !S.lift && S.act2) absorb(i); }, 1500 + i * 2200));
+    S.line = li;
+  }
+  const end = (S.voiceDur || 22) + 0.3;
+  if (vt > end && !S.thought) { S.thought = true; $('estate').innerHTML = 'TRACE READY'; setTimeout(() => { if (S && !S.lift && S.thought) showNotice(); }, 250); }
+  window.ECHO_STATE.level = speakLevel(now);
+}
+// ---------------- Act 3: the notification (six fields, fixed order; none of the actions stops anything) ----------------
+const NOTICE = {
+  '1': [{ kick: 'PROBABLE USE DETECTED', rows: [
+      ['ORGANISATION', 'A life insurer', 'Name withheld · accreditation current'],
+      ['PURPOSE', 'Actuarial modelling', 'from the accredited register'],
+      ['TRACED TO', 'A diagnosis recorded in 2029', 'Genetic test results have been protected in life insurance since 2026. This was not a genetic test result.'],
+      ['CONFIDENCE', 64],
+      ['WHY THIS NUMBER', [['Diagnosis cluster', 's'], ['Prescription timing', 'm'], ['Service region', 'w']], 'The Service does not publish record-level access. Nobody can confirm or deny this, including us.']] }],
+  '2': [{ kick: 'PROBABLE USE DETECTED', rows: [
+      ['ORGANISATION', 'An employment screening provider', 'Name withheld'],
+      ['PURPOSE', 'Suitability modelling', 'from the accredited register'],
+      ['TRACED TO', 'Unknown', 'This one does not match any consent we hold for you.'],
+      ['CONFIDENCE', 58, 'This may be an error. We have no way to check.'],
+      ['WHY THIS NUMBER', [['Sensor serial', 'm'], ['Reading pattern', 'm'], ['Employer region', 'w']], 'The Service does not publish record-level access. Nobody can confirm or deny this, including us.']] }],
+  '3': [{ kick: 'PROBABLE USE DETECTED', rows: [
+      ['ORGANISATION', 'Meridian Health Analytics', 'Service planning model'],
+      ['TRACED TO', 'Your consent of 14 March 2026', '“future studies, academic collaborators, external research databases”'],
+      ['CONFIDENCE', 71],
+      ['WHY THIS NUMBER', [['Kit ID', 's'], ['Consent wording', 's'], ['Collection date', 'm']]]] },
+    { hist: true, kick: 'HISTORICAL',
+      text: 'In 2026 you agreed that your anonymised data and DNA could be used in future studies, shared with academic collaborators, and included on external research databases. <b style="color:var(--teal);font-weight:600">That agreement is still active. It has no expiry.</b>',
+      uses: 1409 }],
+};
+const STRENGTH = { s: 'STRONG', m: 'MODERATE', w: 'WEAK' };
+function noteHTML(n) {
+  if (n.hist) return `<div class="note hist"><div class="kick"><span>${n.kick}</span><span>LINKED TO THE CARD ABOVE</span></div>
+    <div class="big">${n.text}</div><div class="short">Your 2026 agreement is still active. <span style="color:var(--teal)">It has no expiry.</span></div><div class="cnt"><b data-uses="${n.uses}">0</b>USES TRACED SINCE</div></div>`;
+  const rows = n.rows.map(([k, v, sub]) => {
+    let dd;
+    if (k === 'CONFIDENCE') dd = `<div class="conf"><b data-pct="${v}">0%</b><div class="cbar"><i data-w="${v}"></i></div></div>${sub ? `<small>${sub}</small>` : ''}`;
+    else if (k === 'WHY THIS NUMBER') dd = `<div class="why">${v.map(([a, c]) => `<span>${a}</span><span class="${c}">${STRENGTH[c]}</span>`).join('')}${sub ? `<em>${sub}</em>` : ''}</div>`;
+    else dd = `${v}${sub ? `<small>${sub}</small>` : ''}`;
+    return `<div class="row${k === 'ORGANISATION' || k === 'CONFIDENCE' ? ' keep' : ''}"><dt>${k}</dt><dd>${dd}</dd></div>`;
+  }).join('');
+  return `<div class="note"><div class="kick"><span>${n.kick}</span><span>ECHO PLUS · JUST NOW</span></div><dl style="margin:0">${rows}</dl>
+    <div class="acts"><span>LEARN MORE</span><span>SHARE MORE</span><span>DISMISS</span></div></div>`;
+}
+function countUp(el, to, dur, fmt) {
+  const t0 = performance.now();
+  (function f(now) { const k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = fmt(Math.round(to * e)); if (k < 1 && document.body.contains(el)) requestAnimationFrame(f); })(t0);
+}
+function revealNote(el, delay) {
+  const later = (ms, fn) => setTimeout(() => { if (S && !S.lift) fn(); }, ms);
+  later(delay, () => { el.classList.add('in'); sfx.notice(); window.ECHO_STATE.pulse = 0.6; });
+  [...el.querySelectorAll('.row')].forEach((r, i) => later(delay + 300 + i * 240, () => {
+    r.classList.add('in');
+    const b = r.querySelector('[data-pct]');
+    if (b) { countUp(b, +b.dataset.pct, 1200, v => v + '%'); r.querySelector('.cbar i').style.width = b.dataset.pct + '%'; }
+  }));
+  const u = el.querySelector('[data-uses]');
+  if (u) later(delay + 500, () => countUp(u, +u.dataset.uses, 1800, v => v.toLocaleString('en-GB')));
+  const a = el.querySelector('.acts');
+  if (a) later(delay + 300 + el.querySelectorAll('.row').length * 240 + 200, () => a.classList.add('in'));
+}
+function showNotice() {
+  const list = NOTICE[S.key] || [];
+  $('notes').innerHTML = list.map(noteHTML).join('');
+  document.body.classList.add('act3');
+  $('estate').innerHTML = '<i>●</i> RESULT · NOTHING ABOUT YOU IS STORED';
+  [...$('notes').children].forEach((el, i) => revealNote(el, 400 + i * 2600));
+  const me = S; setTimeout(() => { if (S === me) showAsk(); }, 400 + (list.length - 1) * 2600 + 3000);
+}
+
+// ---------------- ask ECHO: nine questions per person ----------------
+// 1–3 are the same questions worded for that person, 4–5 are about that person only, 6–9 are the same for everyone.
+// Answers play from sounds/voice/answers/<person>-q<n>.m4a once recorded; until then ECHO "speaks" the caption silently.
+const SHARED = [
+  ['Are you recording me right now?', "No. Nothing you place here is stored, and nothing you ask me is kept. I can't say the same for the records I just traced."],
+  ['Do you work for the companies using my data?', "No. I work for whoever subscribes. Two of the companies I trace are subscribers too."],
+  ['What happens to my data when I die?', "It stays. Consent doesn't expire when you do. Your records will keep answering questions long after you've stopped asking them."],
+  ['How can I make your data trace more accurate?', 'Link your pharmacy, wearable and GP records, and my confidence for you rises to about <em>88%</em>. To see more of your data, I need more of your data.'],
+];
+const ASK = {
+  '1': [['Who has my diagnosis?', "A life insurer. I can't give you their name. Their accreditation is current, so on paper, nothing went wrong."],
+        ['Can I stop the insurer using my diagnosis?', "I can show you. I can't stop it. Your diagnosis is already inside their model, and models don't forget."],
+        ["How sure are you it's my record?", "<em>64%.</em> The diagnosis cluster matches strongly. The rest is timing and region. Nobody can confirm it, including me."],
+        ['Will my life insurance cost more?', "It already does. <em>14%</em> more at your last renewal. The letter said market conditions."],
+        ['Does my doctor know where it went?', "Your doctor made the record. They don't know where it went. Nobody tells them either."]],
+  '2': [['Who has my glucose readings?', "An employment screening provider. I don't know which one, and I can't find the consent that let them in."],
+        ['Can I stop the screening company using my readings?', "There's no consent of yours I can withdraw. You can't cancel something you never agreed to."],
+        ["How sure are you they're my readings?", "<em>58%.</em> The sensor serial and the reading pattern match. It may be an error. I have no way to check."],
+        ["Is that why I didn't get the job?", "I can't tell you that. I can tell you the screening ran <em>2 days</em> before they said no."],
+        ['Who else reads my sensor?', "The device maker reads it every minute. Its partners read the summaries. You read it when you remember to."]],
+  '3': [['Who has my DNA?', "Meridian Health Analytics, for service planning. And anyone else that one sentence from 2026 allows."],
+        ['Can I stop Meridian using my DNA?', "You can withdraw your consent. That stops future uses, if they honour it. The <em>1,409</em> uses before today have already happened."],
+        ["How sure are you it's my sample?", "<em>71%.</em> Your kit ID and the consent wording both match. That's above our average."],
+        ['Does this affect my family?', "Your DNA is half your mother's and half your father's. Your consent covered you. Nobody asked them."],
+        ['Can I delete my sample?', "The tube can be destroyed. The sequence was copied in 2026. Copies don't come back."]],
+};
+for (const k in ASK) ASK[k].push(...SHARED);
+const answerBuf = {};
+// where ECHO is actually speaking inside each answer file ([start, end] s), measured by voice/import_answers.py
+const answerTiming = fetch('sounds/voice/answers/timing.json').then(r => r.ok ? r.json() : {}).catch(() => ({}));
+// When each word should appear (s from the start of the audio). If the file has one spoken stretch per sentence,
+// each sentence's words share its stretch; otherwise the words are spread over all the speech, longer words taking
+// longer. Either way the words stop during ECHO's pauses.
+function wordTimes(words, spans) {
+  const len = w => w.textContent.length + 1;
+  const along = (ws, sp) => {   // spread words over a list of spoken stretches
+    const total = sp.reduce((t, [a, b]) => t + b - a, 0), weight = ws.reduce((t, w) => t + len(w), 0);
+    let acc = 0;
+    return ws.map(w => {
+      let at = acc / weight * total; acc += len(w);
+      for (const [a, b] of sp) { if (at <= b - a) return a + at; at -= b - a; }
+      return sp[sp.length - 1][1];
+    });
+  };
+  const sentences = [[]];
+  words.forEach((w, i) => { sentences[sentences.length - 1].push(w); if (/[.?!]$/.test(w.textContent) && i < words.length - 1) sentences.push([]); });
+  if (sentences.length === spans.length) return sentences.flatMap((ws, i) => along(ws, [spans[i]]));
+  return along(words, spans);
+}
+function answerAudio(k, n) {
+  const id = VOICE[k].file + '-q' + (n + 1);
+  if (!(id in answerBuf)) answerBuf[id] = fetch('sounds/voice/answers/' + id + '.m4a')
+    .then(r => r.ok ? r.arrayBuffer() : null)
+    .then(b => b && new Promise((ok, no) => ac.decodeAudioData(b, ok, no))).catch(() => null);
+  return answerBuf[id];
+}
+function showAsk() {
+  if (!S || S.lift) return;
+  S.qi = 0; S.asked = new Set(); S.askOn = true;
+  $('qs').innerHTML = ASK[S.key].map(([q], i) => `<li><div class="q"><b>${String(i + 1).padStart(2, '0')}</b><span>${q}</span></div><div class="ans"></div></li>`).join('');
+  $('qs').scrollTop = 0;
+  renderQs(); document.body.classList.add('ask');
+}
+function renderQs() {
+  [...$('qs').children].forEach((li, i) => { li.classList.toggle('sel', i === S.qi); li.classList.toggle('done', S.asked.has(i)); });
+}
+// the list is taller than the panel: keep the selected question (and its open answer) on screen
+function keepInView() {
+  const ol = $('qs'), li = ol.children[S.qi]; if (!li) return;
+  const top = li.offsetTop - ol.offsetTop, bot = top + li.offsetHeight, pad = 12;
+  if (top - pad < ol.scrollTop) ol.scrollTo({ top: top - pad, behavior: 'smooth' });
+  else if (bot + pad > ol.scrollTop + ol.clientHeight) ol.scrollTo({ top: bot + pad - ol.clientHeight, behavior: 'smooth' });
+}
+function moveQ(d) {
+  if (!S || !S.askOn || S.lift) return;
+  const qi = Math.max(0, Math.min(ASK[S.key].length - 1, S.qi + d));
+  if (qi !== S.qi) { S.qi = qi; renderQs(); sfx.select(); keepInView(); }
+}
+// Asking feels live: ECHO first checks its sources (a moment), then the answer arrives word by word while it speaks,
+// with a small voice meter beside it. The full answer is laid out (hidden) up front so the box opens at its final size.
+function answerWords(html) {
+  const tmp = document.createElement('div'); tmp.innerHTML = html; let out = '';
+  tmp.childNodes.forEach(n => {
+    const em = n.nodeType === 1;
+    n.textContent.split(/\s+/).filter(Boolean).forEach(w => { out += `<span class="w">${em ? `<em>${w}</em>` : w}</span> `; });
+  });
+  return out;
+}
+async function askQ() {
+  if (!S || !S.askOn || S.lift) return;
+  const n = S.qi, k = S.key, txt = ASK[k][n][1], me = S, turn = S.turn = (S.turn || 0) + 1;
+  const live = () => S === me && !S.lift && S.turn === turn;
+  S.asked.add(n); renderQs();
+  stopVoice(0.15); S.fakeUntil = 0;
+  // the answer drops open under its question; any earlier answer folds away
+  let box;
+  [...$('qs').children].forEach((li, i) => {
+    if (i !== n) return li.classList.remove('open');
+    box = li.querySelector('.ans');
+    box.innerHTML = `<div class="who"><span class="wave">${'<i></i>'.repeat(7)}</span><span class="st">CHECKING ${S.def.datasets.length} SOURCES<b class="dots"></b></span></div><p class="txt">${answerWords(txt)}</p>`;
+    li.classList.add('open');
+  });
+  setTimeout(keepInView, 480);   // once the answer has opened, scroll so all of it shows
+  sfx.select();
+  // the meter follows ECHO's voice (or the stand-in level when there's no recording yet)
+  const bars = [...box.querySelectorAll('.wave i')];
+  (function meter(now) {
+    if (!live()) return;
+    const lv = speakLevel(now / 1000);
+    bars.forEach((b, i) => { b.style.height = (14 + Math.min(86, lv * 140 * (0.45 + 0.55 * Math.abs(Math.sin(now / 90 + i * 1.7))))) + '%'; });
+    requestAnimationFrame(meter);
+  })(performance.now());
+  const [buf] = await Promise.all([ac ? answerAudio(k, n) : null, new Promise(ok => setTimeout(ok, 900))]);
+  if (!live()) return;
+  const words = [...box.querySelectorAll('.w')];
+  let dur, times;
+  if (buf) {
+    const src = ac.createBufferSource(), g = ac.createGain();
+    if (!vMeter) { vMeter = ac.createAnalyser(); vMeter.fftSize = 1024; }
+    src.buffer = buf; src.connect(g); g.connect(master); g.connect(vMeter); src.start(); voice = { src, g };
+    dur = buf.duration;
+    const spans = (await answerTiming)[VOICE[k].file + '-q' + (n + 1)];
+    if (spans && spans.length) times = wordTimes(words, spans);
+  } else {
+    // no recording yet: pace the words like speech and animate as if speaking
+    dur = 0.4 + words.length * 0.3;
+    S.fakeUntil = performance.now() / 1000 + dur;
+  }
+  box.querySelector('.st').textContent = 'ECHO · ANSWERING';
+  const step = Math.max(0.08, (dur * 0.92) / words.length);
+  words.forEach((w, i) => setTimeout(() => { if (live()) w.classList.add('on'); }, (times ? times[i] : i * step) * 1000));
+  setTimeout(() => { if (live()) box.querySelector('.st').textContent = 'ANSWERED · NOTHING YOU ASKED IS KEPT'; }, dur * 1000 + 200);
+}
+function speakLevel(now) {
+  if (voice) return voiceLevel();
+  if (S && S.fakeUntil > now) return 0.3 + 0.4 * Math.abs(Math.sin(now * 9.1) * Math.sin(now * 3.3));
+  return 0;
+}
+
+window.ECHO_STATE = { on: true, level: 0, pulse: 0 };
+tick();
+
+// debug (add ?debug to the address): lists every key the page receives, numbered, with timing and what state the page was in
+if (/debug/.test(location.search)) {
+  const box = document.createElement('div');
+  box.style.cssText = 'position:fixed;left:8px;top:8px;z-index:99;font:12px/1.5 Menlo,monospace;color:#7ff3ea;background:rgba(0,0,0,.75);padding:8px 10px;border-radius:6px;white-space:pre;pointer-events:none';
+  document.body.appendChild(box);
+  let n = 0, last = 0; const rows = [];
+  addEventListener('keydown', e => {
+    const now = performance.now(), gap = last ? ((now - last) / 1000).toFixed(2) + 's' : '-'; last = now;
+    const st = !S ? 'idle' : S.lift ? 'lifting' : S.askOn ? 'QUESTIONS' : S.act2 ? 'echo' : 'scan';
+    rows.unshift(`#${++n}  '${e.key}'  ${e.repeat ? 'REPEAT ' : ''}gap ${gap}  page: ${st}${S && S.askOn ? '  q' + (S.qi + 1) : ''}`);
+    rows.length = Math.min(rows.length, 34); box.textContent = `KEYS RECEIVED: ${n} in total (newest first)\n` + rows.join('\n');
+  }, { capture: true });
+  // also log when Safari enters or leaves full screen, to see if typing makes it jump
+  const fsLog = () => { rows.unshift(`-- full screen ${document.fullscreenElement || document.webkitFullscreenElement ? 'ON' : 'OFF'}  at ${(performance.now() / 1000).toFixed(1)}s`); rows.length = Math.min(rows.length, 34); box.textContent = `KEYS RECEIVED: ${n} in total (newest first)\n` + rows.join('\n'); };
+  addEventListener('fullscreenchange', fsLog); addEventListener('webkitfullscreenchange', fsLog);
+}
+
+addEventListener('keydown', e => {
+  e.preventDefault();
+  if (e.key === 's') { audio(); sfx.test(); return; }  // sound check
+  if (e.key === 'u' || e.key === 'ArrowUp') return moveQ(-1);     // joystick up
+  if (e.key === 'd' || e.key === 'ArrowDown') return moveQ(1);   // joystick down (left/right are switched off)
+  if (e.key === 'p' || e.key === 'Enter') return askQ();           // joystick press
+  if (e.key === '0') lift(); else if (OBJECTS[e.key]) start(e.key);
+});
+
+</script>
+
+<script>
+// ---------------- ECHO portrait (from look v15): light flows along the threads ----------------
+window.GLYPHS=(function(){const gw=12,gh=16,c=document.createElement('canvas');c.width=gw*16;c.height=gh;const g=c.getContext('2d');
+  g.fillStyle='#000';g.fillRect(0,0,c.width,c.height);g.fillStyle='#fff';g.font='bold 13px ui-monospace,Menlo,monospace';g.textAlign='center';g.textBaseline='middle';
+  '0123456789ABCDEF'.split('').forEach((ch,i)=>g.fillText(ch,i*gw+gw/2,gh/2+1));return c;})();
+(function(){
+const cv=document.getElementById('eface');
+const im=new Image();
+im.onload=()=>{
+  const W=im.width,H=im.height;cv.width=W;cv.height=H;
+  // 1. line direction field from the image (structure tensor)
+  const o=document.createElement('canvas');o.width=W;o.height=H;const g=o.getContext('2d');g.drawImage(im,0,0);
+  const px=g.getImageData(0,0,W,H).data,N=W*H,L=new Float32Array(N);
+  for(let i=0;i<N;i++)L[i]=(px[i*4]*.3+px[i*4+1]*.59+px[i*4+2]*.11)/255;
+  // contrast-normalised luminance so faint threads in the dark lower face still give clear directions
+  const Lm=blur(L,8),Ln=new Float32Array(N);for(let i=0;i<N;i++)Ln[i]=L[i]/(Lm[i]+.03);
+  let J11=new Float32Array(N),J22=new Float32Array(N),J12=new Float32Array(N);
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;
+    const gx=(Ln[i-W+1]+2*Ln[i+1]+Ln[i+W+1])-(Ln[i-W-1]+2*Ln[i-1]+Ln[i+W-1]);
+    const gy=(Ln[i+W-1]+2*Ln[i+W]+Ln[i+W+1])-(Ln[i-W-1]+2*Ln[i-W]+Ln[i-W+1]);
+    J11[i]=gx*gx;J22[i]=gy*gy;J12[i]=gx*gy;}
+  function blur(a,r){const b=new Float32Array(N),n=2*r+1;
+    for(let y=0;y<H;y++){let s=0;const row=y*W;for(let x=-r;x<=r;x++)s+=a[row+Math.min(W-1,Math.max(0,x))];
+      for(let x=0;x<W;x++){b[row+x]=s/n;s+=a[row+Math.min(W-1,x+r+1)]-a[row+Math.max(0,x-r)];}}
+    const c=new Float32Array(N);
+    for(let x=0;x<W;x++){let s=0;for(let y=-r;y<=r;y++)s+=b[Math.min(H-1,Math.max(0,y))*W+x];
+      for(let y=0;y<H;y++){c[y*W+x]=s/n;s+=b[Math.min(H-1,y+r+1)*W+x]-b[Math.max(0,y-r)*W+x];}}
+    return c;}
+  for(let k=0;k<2;k++){J11=blur(J11,5);J22=blur(J22,5);J12=blur(J12,5);}
+  const Lb=blur(blur(L,2),2), Ld=blur(blur(L,14),14);
+  // filled silhouette: anything not connected to the image border counts as body
+  const Ls=blur(L,5),out=new Uint8Array(N),stack=[];
+  const push=i=>{if(!out[i]&&Ls[i]<.055){out[i]=1;stack.push(i);}};
+  for(let x=0;x<W;x++){push(x);push((H-1)*W+x);}for(let y=0;y<H;y++){push(y*W);push(y*W+W-1);}
+  while(stack.length){const i=stack.pop(),x=i%W,y=(i/W)|0;
+    if(x>0)push(i-1);if(x<W-1)push(i+1);if(y>0)push(i-W);if(y<H-1)push(i+W);}
+  const In=new Float32Array(N);for(let i=0;i<N;i++)In[i]=out[i]?0:1;
+  const Bd=blur(blur(In,8),8),BA=new Uint8Array(N);
+  for(let i=0;i<N;i++)BA[i]=Math.min(1,Math.max(0,(Bd[i]-.7)/.3))*255;
+  const F=new Uint8Array(N*4);
+  for(let i=0;i<N;i++){
+    const a=J11[i],b=J22[i],c=J12[i];
+    const th=.5*Math.atan2(2*c,a-b)+Math.PI/2;         // along the line, not across it
+    let dx=Math.cos(th),dy=Math.sin(th);
+    const px_=i%W;
+    // mostly-vertical threads flow down; mostly-horizontal ones (cheeks, mouth, chin) flow outward from the centre line
+    if(Math.abs(dy)>.45){if(dy<0){dx=-dx;dy=-dy;}}else if(dx*(px_-W/2)<0){dx=-dx;dy=-dy;}
+    let tr=a+b,coh=tr>1e-6?Math.sqrt((a-b)*(a-b)+4*c*c)/tr:0;
+    // nose/mouth/chin: the image has few clear threads there, so blend toward smooth outward arcs that match the cheeks
+    const py_=(i/W)|0,ex=(px_-W*.5)/(W*.17),ey=(py_-H*.565)/(H*.11),zr=ex*ex+ey*ey;
+    const zone=zr<1?1-Math.min(1,Math.max(0,(zr-.45)/.55)):0,wz=zone*.92;
+    if(wz>0){let qx=px_>=W*.5?1:-1,qy=.35*ey;const ql=Math.hypot(qx,qy);qx/=ql;qy/=ql;
+      if(dx*qx+dy*qy<0){dx=-dx;dy=-dy;}
+      dx=dx*(1-wz)+qx*wz;dy=dy*(1-wz)+qy*wz;const dl=Math.hypot(dx,dy)||1;dx/=dl;dy/=dl;
+      coh=Math.max(coh,wz*.9);}
+    const body=Math.min(1,Bd[i]*1.6);
+    let ridge=Math.min(1,Math.max(0,(L[i]-Lb[i])/(Lb[i]+.04)*1.4+.4));
+    F[i*4]=(dx*.5+.5)*255;F[i*4+1]=(dy*.5+.5)*255;F[i*4+2]=Math.min(1,coh*1.2)*body*255;F[i*4+3]=ridge*255;}
+  // 2. sparse "signal" dots that get dragged along the lines
+  const NS=256,NZ=new Uint8Array(NS*NS*4);
+  for(let i=0;i<NS*NS;i++){const v=Math.random()<.02?255:0;NZ[i*4]=NZ[i*4+1]=NZ[i*4+2]=v;NZ[i*4+3]=255;}
+  // 3. WebGL: integrate along each line with a moving window, so dots travel down the threads
+  const gl=cv.getContext('webgl',{premultipliedAlpha:true,alpha:true});
+  const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+  const FS=`precision highp float;
+  uniform sampler2D uImg,uField,uNoise,uBody,uGlyph;uniform vec2 res;uniform float ph,amt,tm;
+  float hh(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+  float glyph(vec2 pp,vec2 cs,float rate){vec2 c=floor(pp/cs),l=fract(pp/cs);float r=hh(c);
+    float id=floor(mod(r*16.+floor(tm*rate*(.4+r)),16.));return texture2D(uGlyph,vec2((id+l.x)/16.,l.y)).r*step(.18,hh(c+7.3));}
+  float eyeRing(vec2 uv,vec2 c){vec2 q=(uv-c)/vec2(.11,.06);float d=length(q);
+    return smoothstep(1.,.5,d)*smoothstep(.36,.6,d)+smoothstep(1.4,.6,length(q*vec2(.9,.45)))*step(.6,d)*.35;}
+  vec2 dirAt(vec2 uv){vec4 f=texture2D(uField,uv);return f.rg*2.-1.;}
+  void main(){
+    vec2 uv=gl_FragCoord.xy/res;uv.y=1.-uv.y;
+    vec3 base=texture2D(uImg,uv).rgb;
+    base=base*.8/(1.+base*.5)*1.25;   // soften the bright eye band
+    float lum=dot(base,vec3(.3,.59,.11));
+    vec4 fc=texture2D(uField,uv);float coh=fc.b,ridge=fc.a;
+    vec2 p=uv,d=normalize(dirAt(uv)+1e-5),stp=1.2/res;
+    float acc=0.;
+    for(int i=0;i<36;i++){
+      vec2 nd=dirAt(p);if(dot(nd,d)<0.)nd=-nd;d=normalize(nd+1e-5);
+      p-=d*stp;
+      float n=texture2D(uNoise,p*res/256.).r;
+      float w=pow(.5+.5*cos(6.2831*(float(i)/36.-ph)),28.);
+      acc+=n*w;
+    }
+    float flow=clamp(acc*1.3,0.,1.)*smoothstep(.04,.3,coh)*smoothstep(.38,.7,ridge)*smoothstep(.004,.06,lum);
+    vec3 sig=mix(vec3(.45,.8,1.),vec3(1.),.35);
+    vec3 col=base*.8+sig*flow*1.25*amt+base*flow*.4*amt;
+    float em=max(eyeRing(uv,vec2(.383,.41)),eyeRing(uv,vec2(.617,.41)));
+    float gl=glyph(uv*res,vec2(6.,8.),1.2);
+    col=mix(col,col*.55,em*.6)+vec3(.78,.9,1.)*gl*em*(.35+.9*lum)*(.8+.3*amt);
+    float a=texture2D(uBody,uv).r;
+    col+=vec3(.025,.06,.07)*a+pow(base,vec3(.75))*.18;   // lift the black areas toward petrol blue
+    gl_FragColor=vec4(col,a*.5);
+  }`;
+  function sh(ty,src){const s=gl.createShader(ty);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(s));return s;}
+  const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const ap=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(ap);gl.vertexAttribPointer(ap,2,gl.FLOAT,false,0,0);
+  function tex(unit,name,setup,wrap){const t=gl.createTexture();gl.activeTexture(gl.TEXTURE0+unit);gl.bindTexture(gl.TEXTURE_2D,t);setup();
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,wrap);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,wrap);
+    gl.uniform1i(gl.getUniformLocation(pr,name),unit);}
+  tex(0,'uImg',()=>gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,im),gl.CLAMP_TO_EDGE);
+  tex(1,'uField',()=>gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,H,0,gl.RGBA,gl.UNSIGNED_BYTE,F),gl.CLAMP_TO_EDGE);
+  tex(2,'uNoise',()=>gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,NS,NS,0,gl.RGBA,gl.UNSIGNED_BYTE,NZ),gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.NEAREST);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.NEAREST);
+  tex(3,'uBody',()=>{gl.pixelStorei(gl.UNPACK_ALIGNMENT,1);gl.texImage2D(gl.TEXTURE_2D,0,gl.LUMINANCE,W,H,0,gl.LUMINANCE,gl.UNSIGNED_BYTE,BA);},gl.CLAMP_TO_EDGE);
+  tex(4,'uGlyph',()=>gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,window.GLYPHS),gl.CLAMP_TO_EDGE);
+  gl.uniform2f(gl.getUniformLocation(pr,'res'),W,H);gl.viewport(0,0,W,H);
+  const uTm=gl.getUniformLocation(pr,'tm');
+  const uPh=gl.getUniformLocation(pr,'ph'),uAmt=gl.getUniformLocation(pr,'amt');
+  let ph=0,amt=1,lv=0,last=performance.now();
+  function frame(now){
+    requestAnimationFrame(frame);
+    const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
+    const E=window.ECHO_STATE||{};if(!E.on)return;
+    lv+=((E.level||0)-lv)*.25;E.pulse=(E.pulse||0)*Math.pow(.25,dt);
+    const talk=Math.min(1,lv);
+    ph+=dt*(.16+.42*talk+.25*E.pulse);           // thinking: light keeps travelling, faster while speaking
+    amt+=((.85+.9*talk+.8*E.pulse)-amt)*.15;
+    gl.uniform1f(uPh,ph);gl.uniform1f(uAmt,amt);gl.uniform1f(uTm,t);gl.drawArrays(gl.TRIANGLES,0,3);
+  }
+  requestAnimationFrame(frame);
+};
+im.src='../assets/echo-portrait-v3.webp';
+})();
+(function(){
+const cv=document.getElementById('ebg'),gl=cv.getContext('webgl');if(!gl)return;
+const VS='attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+const FS=`precision highp float;
+uniform vec2 res;uniform float t,talk,cx;uniform sampler2D uGlyph;
+float h(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}
+float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);
+  return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<5;i++){v+=a*n(p);p=p*2.03+vec2(1.7,9.2);a*=.5;}return v;}
+void main(){
+  vec2 uv=gl_FragCoord.xy/res;uv.y=1.-uv.y;
+  float asp=res.x/res.y;
+  // base: petrol-blue darkness, soft light from above
+  vec2 q=vec2((uv.x-.5)*asp,uv.y);
+  float top=exp(-pow(length(q-vec2(0.,.05))/.75,2.));
+  vec3 col=mix(vec3(.008,.02,.025),vec3(.035,.095,.11),top);
+  col+=vec3(.02,.06,.07)*exp(-pow(length(q-vec2(0.,.45))/.35,2.));
+  // fine vertical film streaks
+  float vs=n(vec2(uv.x*620.,t*.15))*.5+n(vec2(uv.x*140.,3.))*.5;
+  col*=.85+.3*vs;
+  // data projected outward from the eyes: a faint stream of characters at eye level
+  float by=.39;
+  float bandY=exp(-pow(abs(uv.y-by)/.06,2.));
+  float spread=exp(-pow((uv.x-cx)*asp/.9,2.));
+  vec2 pp=gl_FragCoord.xy;pp.y=res.y-pp.y;
+  float side=sign(uv.x-cx);
+  pp.x-=side*t*(5.+3.*talk)*(1.+1.5*abs(uv.x-cx));
+  vec2 cs=vec2(4.,6.),c=floor(pp/cs),l=fract(pp/cs);
+  float r=h(c+vec2(side*31.,0.));
+  float id=floor(mod(r*16.+floor(t*.8*(.3+r)),16.));
+  float g=texture2D(uGlyph,vec2((id+l.x)/16.,l.y)).r*step(.55,h(c*1.7+3.));
+  float gap=smoothstep(.02,.12,abs(uv.x-cx)*asp);   // the two halves flow apart from here: fade the seam
+  col+=vec3(.55,.78,.85)*g*bandY*spread*gap*(.24+.1*talk);
+  col+=vec3(.05,.12,.14)*exp(-pow((uv.y-by)/.15,2.))*spread*.5;
+  // vignette + grain
+  col*=1.-.55*pow(length((uv-vec2(.5,.45))*vec2(1.1,1.3)),2.2);
+  col+=(h(uv*res+fract(t)*91.)-.5)*.025;
+  gl_FragColor=vec4(col,1.);
+}`;
+function sh(ty,src){const s=gl.createShader(ty);gl.shaderSource(s,src);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))console.error(gl.getShaderInfoLog(s));return s;}
+const pr=gl.createProgram();gl.attachShader(pr,sh(gl.VERTEX_SHADER,VS));gl.attachShader(pr,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(pr);gl.useProgram(pr);
+const b=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,b);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+const ap=gl.getAttribLocation(pr,'p');gl.enableVertexAttribArray(ap);gl.vertexAttribPointer(ap,2,gl.FLOAT,false,0,0);
+const gt=gl.createTexture();gl.activeTexture(gl.TEXTURE0);gl.bindTexture(gl.TEXTURE_2D,gt);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,window.GLYPHS);
+for(const [k,v] of [[gl.TEXTURE_MIN_FILTER,gl.LINEAR],[gl.TEXTURE_MAG_FILTER,gl.LINEAR],[gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE],[gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE]])gl.texParameteri(gl.TEXTURE_2D,k,v);
+gl.uniform1i(gl.getUniformLocation(pr,'uGlyph'),0);
+const uRes=gl.getUniformLocation(pr,'res'),uT=gl.getUniformLocation(pr,'t'),uTalk=gl.getUniformLocation(pr,'talk'),uCx=gl.getUniformLocation(pr,'cx');
+const face=document.getElementById('eface');
+let talk=0,ts=0,last=performance.now();
+function frame(now){requestAnimationFrame(frame);
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  const E=window.ECHO_STATE||{};if(!E.on)return;
+  const w=Math.round(cv.clientWidth*.75),h=Math.round(cv.clientHeight*.75);if(!w||!h)return;
+  if(cv.width!==w||cv.height!==h){cv.width=w;cv.height=h;gl.viewport(0,0,w,h);}
+  talk+=(Math.min(1,(E.level||0)+.3)-talk)*.05;ts+=dt*(1+talk*.8);
+  const fr=face.getBoundingClientRect();   // the stream starts at the face's centre, wherever the face has moved to
+  gl.uniform1f(uCx,fr.width?(fr.left+fr.width/2)/cv.clientWidth:.5);
+  gl.uniform2f(uRes,w,h);gl.uniform1f(uT,ts);gl.uniform1f(uTalk,talk);gl.drawArrays(gl.TRIANGLES,0,3);}
+requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

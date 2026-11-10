@@ -1,0 +1,67 @@
+// ECHO offline cache. Every file the page needs is saved on the first visit; after that ECHO opens with no network.
+// When the site is updated, change VERSION so the iPad fetches the new files the next time it is online.
+const VERSION = 'echo-v13-1';
+const FILES = [
+ "echo-labels.js",
+ "echo.webmanifest",
+ "fonts/Urbanist-VariableFont_wght.ttf",
+ "fonts/ibm-plex-mono-latin-400-normal.woff2",
+ "fonts/ibm-plex-mono-latin-500-normal.woff2",
+ "index.html",
+ "lib/three/build/three.module.js",
+ "lib/three/examples/jsm/environments/RoomEnvironment.js",
+ "lib/three/examples/jsm/loaders/STLLoader.js",
+ "lib/three/examples/jsm/postprocessing/EffectComposer.js",
+ "lib/three/examples/jsm/postprocessing/MaskPass.js",
+ "lib/three/examples/jsm/postprocessing/OutputPass.js",
+ "lib/three/examples/jsm/postprocessing/Pass.js",
+ "lib/three/examples/jsm/postprocessing/RenderPass.js",
+ "lib/three/examples/jsm/postprocessing/ShaderPass.js",
+ "lib/three/examples/jsm/postprocessing/UnrealBloomPass.js",
+ "lib/three/examples/jsm/shaders/CopyShader.js",
+ "lib/three/examples/jsm/shaders/LuminosityHighPassShader.js",
+ "lib/three/examples/jsm/shaders/OutputShader.js",
+ "models/asha_kit.stl",
+ "models/daniel_sensor.stl",
+ "models/maya_jar.stl",
+ "sounds/echo-scan.m4a",
+ "sounds/voice/answers/daniel-q1.m4a",
+ "sounds/voice/answers/daniel-q2.m4a",
+ "sounds/voice/answers/daniel-q3.m4a",
+ "sounds/voice/answers/daniel-q4.m4a",
+ "sounds/voice/answers/daniel-q5.m4a",
+ "sounds/voice/answers/daniel-q6.m4a",
+ "sounds/voice/answers/daniel-q7.m4a",
+ "sounds/voice/answers/daniel-q8.m4a",
+ "sounds/voice/answers/daniel-q9.m4a",
+ "sounds/voice/answers/emily-q1.m4a",
+ "sounds/voice/answers/emily-q2.m4a",
+ "sounds/voice/answers/emily-q3.m4a",
+ "sounds/voice/answers/emily-q4.m4a",
+ "sounds/voice/answers/emily-q5.m4a",
+ "sounds/voice/answers/emily-q6.m4a",
+ "sounds/voice/answers/emily-q7.m4a",
+ "sounds/voice/answers/emily-q8.m4a",
+ "sounds/voice/answers/emily-q9.m4a",
+ "sounds/voice/answers/maya-q1.m4a",
+ "sounds/voice/answers/maya-q2.m4a",
+ "sounds/voice/answers/maya-q3.m4a",
+ "sounds/voice/answers/maya-q4.m4a",
+ "sounds/voice/answers/maya-q5.m4a",
+ "sounds/voice/answers/maya-q6.m4a",
+ "sounds/voice/answers/maya-q7.m4a",
+ "sounds/voice/answers/maya-q8.m4a",
+ "sounds/voice/answers/maya-q9.m4a",
+ "sounds/voice/answers/timing.json",
+ "sounds/voice/daniel.m4a",
+ "sounds/voice/emily.m4a",
+ "sounds/voice/intro.m4a",
+ "sounds/voice/lines.json",
+ "sounds/voice/maya.m4a"
+];
+self.addEventListener('install', e => e.waitUntil(caches.open(VERSION).then(c => c.addAll(['./', ...FILES])).then(() => self.skipWaiting())));
+self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())));
+self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+  e.respondWith(caches.match(e.request, { ignoreSearch: true }).then(hit => hit || fetch(e.request)));
+});

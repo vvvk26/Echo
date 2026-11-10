@@ -1,0 +1,57 @@
+{
+ "_note": "Start time (s) of each line inside the merged voice file, measured from the pauses in the audio (3 Nov 2026).",
+ "maya": [
+  {
+   "at": 0,
+   "text": "I've scanned Maya's prescription. Veralin, 20 mg, issued in 2031."
+  },
+  {
+   "at": 6.38,
+   "text": "It traces back to a diagnosis from 2029. That diagnosis now sits in three datasets: a regional analytics release, a pharmacy panel, and an insurer's risk model."
+  },
+  {
+   "at": 19.38,
+   "text": "The insurer used it to price her life. Genetic results are protected. A diagnosis is not."
+  },
+  {
+   "at": 26.72,
+   "text": "Sixty-four percent. I can't tell you which insurer it was. But that insurer knows exactly who Maya is."
+  }
+ ],
+ "daniel": [
+  {
+   "at": 0,
+   "text": "I've scanned Daniel's glucose sensor. Fourteen days. A reading every minute. 20,160 in total."
+  },
+  {
+   "at": 9.58,
+   "text": "Those readings turn up in three places: a device maker's partner, a research consortium, and an employment screening provider."
+  },
+  {
+   "at": 18.48,
+   "text": "The screening provider used them to score his suitability for work. He never agreed to that. Not in any consent I can find."
+  },
+  {
+   "at": 26.98,
+   "text": "Fifty-eight percent. It may be an error. I have no way to check, and neither does he."
+  }
+ ],
+ "emily": [
+  {
+   "at": 0,
+   "text": "I've scanned Emily's saliva kit. Returned on 14 March 2026. Two millilitres. Her DNA."
+  },
+  {
+   "at": 9.54,
+   "text": "She agreed to future studies, academic collaborators, and external research databases. That one sentence has carried her sample into three datasets."
+  },
+  {
+   "at": 20.46,
+   "text": "Meridian Health Analytics is using it now, for service planning. Her consent is still active. It has no expiry."
+  },
+  {
+   "at": 28.14,
+   "text": "Seventy-one percent. And that's only the latest. I've traced 1,409 uses since."
+  }
+ ]
+}
